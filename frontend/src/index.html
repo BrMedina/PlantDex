@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantDex</title>
+    <link rel="stylesheet" href="output.css">
+</head>
+<body class="bg-[#EFEFEF]">
+    <h1 class="title">Welcome Brent!</h1>
+    <ion-icon name="notifications-outline"></ion-icon>
+    </main>
+
+    <script src="script.js"></script>
+
+
+
+    <!-- ════════════════════════════ NAV BAR ════════════════════════════ -->
+    <nav class="nav-bar">
+ 
+  <!-- Decorative curve cutout above FAB — drawn in the nav background color -->
+  <svg class="nav-curve" viewBox="0 0 90 30" fill="none" xmlns="http://www.w3.org/2000/svg"
+       style="position:fixed; bottom:78px; left:50%; transform:translateX(-50%); width:90px; height:30px; pointer-events:none;">
+    <path d="M0 30 Q0 0 15 0 Q28 0 35 14 Q45 30 55 14 Q62 0 75 0 Q90 0 90 30Z"
+          fill="#ffffff"/>
+  </svg>
+ 
+  <div class="nav-items">
+ 
+    <!-- Home -->
+    <div class="nav-item active" onclick="setActive(this)">
+      <div class="nav-icon">
+        <ion-icon name="home-outline"></ion-icon>
+      </div>
+      <span class="nav-label">Home</span>
+    </div>
+ 
+    <!-- Search -->
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-icon">
+        <ion-icon name="search-outline"></ion-icon>
+      </div>
+      <span class="nav-label">Search</span>
+    </div>
+ 
+    <!-- FAB (center) -->
+    <div class="fab-slot">
+      <div class="fab" onclick="onFabClick()">
+        <img src="../assets/Logo.png" alt="Logo">
+      </div>
+    </div>
+ 
+    <!-- Collections -->
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-icon">
+        <ion-icon name="leaf-outline"></ion-icon>
+      </div>
+      <span class="nav-label">Collections</span>
+    </div>
+ 
+    <!-- Profile -->
+    <div class="nav-item" onclick="setActive(this)">
+      <div class="nav-icon">
+        <ion-icon name="person-outline"></ion-icon>
+        </svg>
+      </div>
+      <span class="nav-label">Profile</span>
+    </div>
+ 
+  </div>
+</nav>
+<!-- ════════════════════════════════════════════════════════════════ -->
+</body>
+</html>
+
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
