@@ -6,64 +6,160 @@
     <title>PlantDex</title>
     <link rel="stylesheet" href="output.css">
 </head>
-<body class="bg-[#EFEFEF]">
-    <h1 class="title">Welcome Brent!</h1>
-    <ion-icon name="notifications-outline"></ion-icon>
-    </main>
+<body class="app-body">
+    <div class="app-shell">
+        <header class="top-header">
+            <h1 class="title">Welcome Brent!</h1>
+            <button class="icon-btn" type="button" aria-label="Notifications">
+                <ion-icon name="notifications-outline"></ion-icon>
+            </button>
+        </header>
+
+        <main class="main-content">
+            <section class="tab-panel is-active" data-panel="home">
+                <h2>Latest Scan</h2>
+                <div id="plantResults" class="plant-results hidden">
+                    <div class="plant-card">
+                        <div class="plant-header">
+                            <div class="plant-name-group">
+                                <h3 id="resultPlantName" class="plant-name">---</h3>
+                                <p id="resultScientificName" class="scientific-name">---</p>
+                            </div>
+                            <div class="confidence-badge">
+                                <span id="resultConfidence" class="confidence-value">0%</span>
+                                <span class="confidence-label">Confidence</span>
+                            </div>
+                        </div>
+
+                        <div class="plant-type-tag">
+                            <span id="resultPlantType">---</span>
+                        </div>
+
+                        <div class="result-section">
+                            <h4>Description</h4>
+                            <p id="resultDescription">---</p>
+                        </div>
+
+                        <div class="result-grid">
+                            <div class="result-item">
+                                <span class="result-label">Bloom Season</span>
+                                <p id="resultBloomSeason">---</p>
+                            </div>
+                            <div class="result-item">
+                                <span class="result-label">Toxicity</span>
+                                <p id="resultToxicity">---</p>
+                            </div>
+                        </div>
+
+                        <div class="result-section">
+                            <h4>Bloom Season by Location</h4>
+                            <div class="bloom-location-grid">
+                                <div class="bloom-item">
+                                    <span class="bloom-label">Northern Hemisphere</span>
+                                    <p id="resultBloomNorth">---</p>
+                                </div>
+                                <div class="bloom-item">
+                                    <span class="bloom-label">Southern Hemisphere</span>
+                                    <p id="resultBloomSouth">---</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="result-section">
+                            <h4>Care Tips</h4>
+                            <ul id="resultCareTips" class="care-tips-list">
+                                <li>---</li>
+                            </ul>
+                        </div>
+
+                        <div class="result-section">
+                            <h4>Native Regions</h4>
+                            <p id="resultNativeRegions">---</p>
+                        </div>
+
+                        <button id="clearResultsBtn" class="btn-primary" type="button">Scan Another Plant</button>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state">
+                    <ion-icon name="leaf-outline"></ion-icon>
+                    <p>Scan a plant with the camera to get started!</p>
+                </div>
+            </section>
+
+            <section class="tab-panel" data-panel="search">
+                <h2>Search</h2>
+                <p>Search plants and explore care guides.</p>
+            </section>
+
+            <section class="tab-panel" data-panel="collections">
+                <h2>Collections</h2>
+                <p>View your saved plant library.</p>
+            </section>
+
+            <section class="tab-panel" data-panel="profile">
+                <h2>Profile</h2>
+                <p>Manage your account and app settings.</p>
+            </section>
+        </main>
+
+        <section id="cameraPanel" class="camera-panel" aria-hidden="true">
+            <div class="ip-camera-config">
+                <input id="ipCameraUrl" type="text" placeholder="http://192.168.1.x:8080/shot.jpg" class="ip-camera-input">
+                <button id="connectIpCamera" class="btn-connect" type="button">Connect</button>
+            </div>
+            <div class="camera-screen-wrap">
+                <img id="ipCameraStream" src="" alt="IP Camera Stream" class="ip-camera-img">
+                <div class="camera-overlay"></div>
+            </div>
+            <p id="ipCameraStatus" class="ip-camera-status"></p>
+
+            <button id="shutterButton" class="shutter-btn" type="button" aria-label="Take photo">
+                <img src="../assets/Shutter.png" alt="Shutter button">
+            </button>
+            <canvas id="photoCanvas" style="display: none;"></canvas>
+        </section>
+
+        <nav class="nav-bar" aria-label="Bottom navigation">
+            <div class="nav-items">
+                <button class="nav-item active" data-tab="home" type="button">
+                    <span class="nav-icon">
+                        <ion-icon name="home-outline"></ion-icon>
+                    </span>
+                    <span class="nav-label">Home</span>
+                </button>
+
+                <button class="nav-item" data-tab="search" type="button">
+                    <span class="nav-icon">
+                        <ion-icon name="search-outline"></ion-icon>
+                    </span>
+                    <span class="nav-label">Search</span>
+                </button>
+
+                <div class="fab-slot" aria-hidden="true">
+                    <button id="fabButton" class="fab" type="button" aria-label="Open camera">
+                        <img src="../assets/Logo.png" alt="PlantDex camera">
+                    </button>
+                </div>
+
+                <button class="nav-item" data-tab="collections" type="button">
+                    <span class="nav-icon">
+                        <ion-icon name="leaf-outline"></ion-icon>
+                    </span>
+                    <span class="nav-label">Collections</span>
+                </button>
+
+                <button class="nav-item" data-tab="profile" type="button">
+                    <span class="nav-icon">
+                        <ion-icon name="person-outline"></ion-icon>
+                    </span>
+                    <span class="nav-label">Profile</span>
+                </button>
+            </div>
+        </nav>
+    </div>
 
     <script src="script.js"></script>
-
-
-
-    <!-- ════════════════════════════ NAV BAR ════════════════════════════ -->
-    <nav class="nav-bar">
- 
-
-  <div class="nav-items">
- 
-    <!-- Home -->
-    <div class="nav-item active" onclick="setActive(this)">
-      <div class="nav-icon">
-        <ion-icon name="home-outline"></ion-icon>
-      </div>
-      <span class="nav-label">Home</span>
-    </div>
- 
-    <!-- Search -->
-    <div class="nav-item" onclick="setActive(this)">
-      <div class="nav-icon">
-        <ion-icon name="search-outline"></ion-icon>
-      </div>
-      <span class="nav-label">Search</span>
-    </div>
- 
-    <!-- FAB (center) -->
-    <div class="fab-slot">
-      <div class="fab" onclick="onFabClick()">
-        <img src="../assets/Logo.png" alt="Logo">
-      </div>
-    </div>
- 
-    <!-- Collections -->
-    <div class="nav-item" onclick="setActive(this)">
-      <div class="nav-icon">
-        <ion-icon name="leaf-outline"></ion-icon>
-      </div>
-      <span class="nav-label">Collections</span>
-    </div>
- 
-    <!-- Profile -->
-    <div class="nav-item" onclick="setActive(this)">
-      <div class="nav-icon">
-        <ion-icon name="person-outline"></ion-icon>
-        </svg>
-      </div>
-      <span class="nav-label">Profile</span>
-    </div>
- 
-  </div>
-</nav>
-<!-- ════════════════════════════════════════════════════════════════ -->
 </body>
 </html>
 
