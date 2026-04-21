@@ -10,6 +10,13 @@ const photoCanvas = document.getElementById('photoCanvas');
 const plantResults = document.getElementById('plantResults');
 const emptyState = document.getElementById('emptyState');
 const clearResultsBtn = document.getElementById('clearResultsBtn');
+const openChatBtn = document.getElementById('openChatBtn');
+const chatBackBtn = document.getElementById('chatBackBtn');
+const plantDetailsView = document.getElementById('plantDetailsView');
+const plantChatPanel = document.getElementById('plantChatPanel');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const sendChatBtn = document.getElementById('sendChatBtn');
 
 // IP Camera elements
 const ipCameraUrl = document.getElementById('ipCameraUrl');
@@ -18,6 +25,7 @@ const ipCameraStatus = document.getElementById('ipCameraStatus');
 const connectIpCamera = document.getElementById('connectIpCamera');
 
 let ipCameraRefreshInterval = null;
+let currentPlantContext = '';
 
 function setActiveTab(tabName) {
   navItems.forEach((item) => {
@@ -146,8 +154,72 @@ function displayPlantResults(data) {
   document.getElementById('resultNativeRegions').textContent =
     nativeRegions.length > 0 ? nativeRegions.join(', ') : 'Unknown';
 
+  currentPlantContext = [
+    `Plant Name: ${data.plant_name || 'Unknown'}`,
+    `Scientific Name: ${data.scientific_name || 'Unknown'}`,
+    `Plant Type: ${data.plant_type || 'Unknown'}`,
+    `Bloom Season: ${data.bloom_season || 'Unknown'}`,
+    `Toxicity: ${data.toxicity || 'Unknown'}`,
+    `Native Regions: ${(nativeRegions.length > 0 ? nativeRegions.join(', ') : 'Unknown')}`,
+    `Description: ${data.description || 'Unknown'}`
+  ].join('\n');
+
+  chatMessages.innerHTML = '';
+  appendChatMessage('assistant', 'Ask me anything about this plant. I can help with care, bloom timing, and safety notes.');
+  closePlantChat();
+
   emptyState.style.display = 'none';
   plantResults.classList.remove('hidden');
+}
+
+function appendChatMessage(role, text) {
+  const bubble = document.createElement('div');
+  bubble.className = `chat-message ${role}`;
+  bubble.textContent = text;
+  chatMessages.appendChild(bubble);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function openPlantChat() {
+  plantDetailsView.classList.add('is-hidden');
+  plantChatPanel.classList.remove('is-hidden');
+}
+
+function closePlantChat() {
+  plantChatPanel.classList.add('is-hidden');
+  plantDetailsView.classList.remove('is-hidden');
+}
+
+async function sendPlantChatMessage() {
+  const message = (chatInput.value || '').trim();
+  if (!message) return;
+
+  appendChatMessage('user', message);
+  chatInput.value = '';
+  sendChatBtn.disabled = true;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        context: currentPlantContext
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Chat request failed');
+    }
+
+    const payload = await response.json();
+    appendChatMessage('assistant', payload.reply || 'No reply received.');
+  } catch (error) {
+    appendChatMessage('assistant', `I could not respond right now: ${error.message}`);
+  } finally {
+    sendChatBtn.disabled = false;
+  }
 }
 
 function clearResults() {
@@ -222,6 +294,15 @@ shutterButton.addEventListener('click', async () => {
 });
 
 clearResultsBtn.addEventListener('click', clearResults);
+openChatBtn.addEventListener('click', openPlantChat);
+chatBackBtn.addEventListener('click', closePlantChat);
+sendChatBtn.addEventListener('click', sendPlantChatMessage);
+chatInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    sendPlantChatMessage();
+  }
+});
 
 // IP Camera connection handler
 connectIpCamera.addEventListener('click', () => {

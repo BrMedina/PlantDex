@@ -20,6 +20,7 @@
                 <h2>Latest Scan</h2>
                 <div id="plantResults" class="plant-results hidden">
                     <div class="plant-card">
+                        <div id="plantDetailsView">
                         <div class="plant-header">
                             <div class="plant-name-group">
                                 <h3 id="resultPlantName" class="plant-name">---</h3>
@@ -68,7 +69,21 @@
                             Warning: Plant details are AI-generated. Please double-check bloom season, toxicity, and care information before acting on it.
                         </p>
 
+                        <button id="openChatBtn" class="btn-secondary" type="button">Chat about this plant</button>
                         <button id="clearResultsBtn" class="btn-primary" type="button">Scan Another Plant</button>
+                        </div>
+
+                        <div id="plantChatPanel" class="chat-panel is-hidden">
+                            <div class="chat-panel-header">
+                                <button id="chatBackBtn" class="chat-back-btn" type="button">Back to Plant Details</button>
+                                <h4>Plant Chat</h4>
+                            </div>
+                            <div id="chatMessages" class="chat-messages"></div>
+                            <div class="chat-composer">
+                                <input id="chatInput" class="chat-input" type="text" placeholder="Ask about care, bloom, toxicity..." />
+                                <button id="sendChatBtn" class="chat-send-btn" type="button">Send</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
