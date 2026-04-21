@@ -121,15 +121,12 @@ async function capturePhotoFromVideo() {
 function displayPlantResults(data) {
   document.getElementById('resultPlantName').textContent = data.plant_name || '---';
   document.getElementById('resultScientificName').textContent = `(${data.scientific_name || 'Unknown'})`;
+  document.getElementById('resultIdentifiedBy').textContent = `Identified by: ${data.identified_by || 'PlantDex model'}`;
   document.getElementById('resultPlantType').textContent = data.plant_type || '---';
   document.getElementById('resultConfidence').textContent = `${Math.round((data.confidence || 0) * 100)}%`;
   document.getElementById('resultDescription').textContent = data.description || '---';
   document.getElementById('resultBloomSeason').textContent = data.bloom_season || '---';
   document.getElementById('resultToxicity').textContent = data.toxicity || 'Unknown';
-
-  const bloomLoc = data.bloom_season_by_location || {};
-  document.getElementById('resultBloomNorth').textContent = bloomLoc.northern_hemisphere || '---';
-  document.getElementById('resultBloomSouth').textContent = bloomLoc.southern_hemisphere || '---';
 
   const careTipsList = document.getElementById('resultCareTips');
   careTipsList.innerHTML = '';

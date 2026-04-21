@@ -43,6 +43,18 @@ BLOOM_DATA_BY_GENUS = {
 }
 
 
+def parse_json_object(text):
+    """Extract and parse first JSON object found in model output."""
+    try:
+        return json.loads(text)
+    except Exception:
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1 and end > start:
+            return json.loads(text[start:end + 1])
+    return {}
+
+
 def normalize_species_name(scientific_name):
     """Normalize scientific name to genus + species for lookup."""
     if not scientific_name:
@@ -53,17 +65,6 @@ def normalize_species_name(scientific_name):
         return scientific_name.strip().lower()
 
     return f"{parts[0].lower()} {parts[1].lower()}"
-
-
-def shift_months_by_hemisphere(months, offset=6):
-    """Shift month list by offset (6 months for opposite hemisphere)."""
-    shifted = []
-    for month in months:
-        if month not in MONTHS:
-            continue
-        idx = MONTHS.index(month)
-        shifted.append(MONTHS[(idx + offset) % 12])
-    return shifted
 
 
 def format_month_range(months):
@@ -77,29 +78,8 @@ def format_month_range(months):
     return f"{months[0]}-{months[-1]}"
 
 
-def infer_hemisphere(location):
-    """Infer hemisphere from free-text location."""
-    if not location:
-        return 'northern'
-
-    text = location.lower()
-    southern_markers = [
-        'southern', 'australia', 'new zealand', 'argentina',
-        'chile', 'south africa', 'uruguay', 'paraguay'
-    ]
-    northern_markers = ['northern', 'usa', 'canada', 'europe', 'india', 'japan']
-
-    if any(marker in text for marker in southern_markers):
-        return 'southern'
-
-    if any(marker in text for marker in northern_markers):
-        return 'northern'
-
-    return 'northern'
-
-
-def build_bloom_profile(scientific_name, genus_name, user_location):
-    """Build hemisphere-aware bloom payload with species/genus fallback."""
+def build_bloom_profile(scientific_name, genus_name):
+    """Build bloom payload with species/genus fallback."""
     normalized_species = normalize_species_name(scientific_name)
     normalized_genus = (genus_name or '').strip().lower()
 
@@ -113,27 +93,67 @@ def build_bloom_profile(scientific_name, genus_name, user_location):
     if not north_months:
         return {
             'bloom_season': 'Unknown',
-            'bloom_season_by_location': {
-                'northern_hemisphere': 'Unknown',
-                'southern_hemisphere': 'Unknown',
-                'user_location': 'Unknown',
-                'note': 'No reliable bloom data available for this species in the current PlantDex dataset.'
-            }
+            'bloom_source': 'No reliable bloom data available for this species in the current PlantDex dataset.'
         }
-
-    south_months = shift_months_by_hemisphere(north_months, offset=6)
-    hemisphere = infer_hemisphere(user_location)
-    user_months = north_months if hemisphere == 'northern' else south_months
 
     return {
-        'bloom_season': format_month_range(user_months),
-        'bloom_season_by_location': {
-            'northern_hemisphere': format_month_range(north_months),
-            'southern_hemisphere': format_month_range(south_months),
-            'user_location': format_month_range(user_months),
-            'note': f"Estimated from {source}-level bloom profile."
-        }
+        'bloom_season': format_month_range(north_months),
+        'bloom_source': f"Estimated from {source}-level bloom profile."
     }
+
+
+def build_plant_description(species, score):
+    """Build a readable plant description from identification metadata."""
+    scientific_name = species.get('scientificName', 'Unknown')
+    genus = species.get('genus', {}).get('name', 'Unknown genus')
+    family = species.get('family', {}).get('name', 'Unknown family')
+    common_names = species.get('commonNames', [])
+
+    common_name_text = ''
+    if common_names:
+        common_name_text = f" Commonly known as {common_names[0]}."
+
+    confidence_pct = int(round((score or 0) * 100))
+    return (
+        f"{scientific_name} is a flowering plant in the {family} family and {genus} genus."
+        f"{common_name_text}"
+        f" This profile is based on visual identification confidence of about {confidence_pct}%."
+    ).strip()
+
+
+def enrich_plant_details_with_groq(scientific_name, common_name, family, genus):
+    """Use Groq model knowledge to enrich plant details."""
+    if not os.getenv("GROQ_API_KEY"):
+        return {}
+
+    prompt = (
+        "Return only valid JSON with keys: description, plant_type, bloom_season, toxicity, native_regions. "
+        "Do not include markdown. native_regions must be an array of strings. "
+        "If uncertain, use 'Unknown'. "
+        f"Plant scientific name: {scientific_name}. "
+        f"Common name: {common_name}. "
+        f"Family: {family}. "
+        f"Genus: {genus}."
+    )
+
+    try:
+        completion = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a botanist assistant that returns concise factual JSON only."
+                },
+                {"role": "user", "content": prompt}
+            ],
+            stream=False
+        )
+        content = completion.choices[0].message.content or ""
+        parsed = parse_json_object(content)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception as e:
+        print(f"Groq enrichment error: {e}")
+        return {}
 
 
 @app.route('/api/scan-plant', methods=['POST'])
@@ -142,7 +162,6 @@ def scan_plant():
     try:
         data = request.json
         image_base64 = data.get('image')
-        user_location = data.get('location', 'Unknown')
 
         if not image_base64:
             return jsonify({'error': 'No image provided'}), 400
@@ -151,7 +170,7 @@ def scan_plant():
             return jsonify({'error': 'PlantNet API key not configured. Add PLANTNET_API_KEY to .env'}), 500
 
         # Query PlantNet API
-        plantnet_results, plantnet_error = query_plantnet(image_base64, user_location)
+        plantnet_results, plantnet_error = query_plantnet(image_base64)
 
         if plantnet_error:
             return jsonify({'error': plantnet_error}), 400
@@ -165,7 +184,7 @@ def scan_plant():
         return jsonify({'error': str(e)}), 500
 
 
-def query_plantnet(image_base64, user_location='Unknown'):
+def query_plantnet(image_base64):
     """Query PlantNet API for plant identification."""
     try:
         # Accept both raw base64 and data URLs from the frontend camera capture.
@@ -235,28 +254,51 @@ def query_plantnet(image_base64, user_location='Unknown'):
 
         top_result = data['results'][0]
         species = top_result.get('species', {})
+        score = top_result.get('score', 0)
         scientific_name = species.get('scientificName', 'Unknown')
         genus_name = species.get('genus', {}).get('name', '')
-        bloom_profile = build_bloom_profile(scientific_name, genus_name, user_location)
+        family_name = species.get('family', {}).get('name', '')
+        common_name = species.get('commonNames', ['Unknown'])[0]
+        bloom_profile = build_bloom_profile(scientific_name, genus_name)
+        plant_description = build_plant_description(species, score)
+        groq_details = enrich_plant_details_with_groq(
+            scientific_name=scientific_name,
+            common_name=common_name,
+            family=family_name,
+            genus=genus_name
+        )
+
+        final_description = str(groq_details.get('description') or plant_description)
+        final_plant_type = str(groq_details.get('plant_type') or 'Unknown')
+        final_bloom_season = str(groq_details.get('bloom_season') or bloom_profile.get('bloom_season', 'Unknown'))
+        final_toxicity = str(groq_details.get('toxicity') or 'Unknown - research before consumption')
+        groq_regions = groq_details.get('native_regions')
+        if isinstance(groq_regions, list) and groq_regions:
+            final_native_regions = [str(r).strip() for r in groq_regions if str(r).strip()]
+        else:
+            final_native_regions = [genus_name] if genus_name else ['Unknown']
+
+        identified_by = 'PlantNet API + Groq enrichment' if groq_details else 'PlantNet API'
         
         return {
-            'plant_name': species.get('commonNames', ['Unknown'])[0],
+            'plant_name': common_name,
             'scientific_name': scientific_name,
-            'plant_type': 'Unknown',
-            'confidence': round(top_result.get('score', 0), 2),
-            'description': f"Identified via PlantNet API. Genus: {species.get('genus', {}).get('name', 'Unknown')}",
-            'bloom_season': bloom_profile.get('bloom_season', 'Unknown'),
-            'bloom_season_by_location': bloom_profile.get('bloom_season_by_location', {}),
+            'plant_type': final_plant_type,
+            'confidence': round(score, 2),
+            'description': final_description,
+            'identified_by': identified_by,
+            'bloom_season': final_bloom_season,
+            'bloom_source': bloom_profile.get('bloom_source', 'Estimated from species data.'),
             'care_tips': [
                 'Research specific care requirements for this species',
                 'Check soil moisture needs',
                 'Provide appropriate sunlight',
                 'Maintain suitable temperature'
             ],
-            'toxicity': 'Unknown - research before consumption',
-            'native_regions': [species.get('genus', {}).get('name', 'Unknown')],
-            'genus': species.get('genus', {}).get('name', ''),
-            'family': species.get('family', {}).get('name', '')
+            'toxicity': final_toxicity,
+            'native_regions': final_native_regions,
+            'genus': genus_name,
+            'family': family_name
         }, None
 
     except Exception as e:

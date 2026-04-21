@@ -24,6 +24,7 @@
                             <div class="plant-name-group">
                                 <h3 id="resultPlantName" class="plant-name">---</h3>
                                 <p id="resultScientificName" class="scientific-name">---</p>
+                                <p id="resultIdentifiedBy" class="identified-by">Identified by: ---</p>
                             </div>
                             <div class="confidence-badge">
                                 <span id="resultConfidence" class="confidence-value">0%</span>
@@ -52,20 +53,6 @@
                         </div>
 
                         <div class="result-section">
-                            <h4>Bloom Season by Location</h4>
-                            <div class="bloom-location-grid">
-                                <div class="bloom-item">
-                                    <span class="bloom-label">Northern Hemisphere</span>
-                                    <p id="resultBloomNorth">---</p>
-                                </div>
-                                <div class="bloom-item">
-                                    <span class="bloom-label">Southern Hemisphere</span>
-                                    <p id="resultBloomSouth">---</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="result-section">
                             <h4>Care Tips</h4>
                             <ul id="resultCareTips" class="care-tips-list">
                                 <li>---</li>
@@ -76,6 +63,10 @@
                             <h4>Native Regions</h4>
                             <p id="resultNativeRegions">---</p>
                         </div>
+
+                        <p class="ai-warning">
+                            Warning: Plant details are AI-generated. Please double-check bloom season, toxicity, and care information before acting on it.
+                        </p>
 
                         <button id="clearResultsBtn" class="btn-primary" type="button">Scan Another Plant</button>
                     </div>
