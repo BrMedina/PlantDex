@@ -10,6 +10,14 @@ const photoCanvas = document.getElementById('photoCanvas');
 const plantResults = document.getElementById('plantResults');
 const emptyState = document.getElementById('emptyState');
 const clearResultsBtn = document.getElementById('clearResultsBtn');
+const addToCollectionBtn = document.getElementById('addToCollectionBtn');
+const scanHistoryList = document.getElementById('scanHistoryList');
+const collectionsList = document.getElementById('collectionsList');
+const collectionsEmpty = document.getElementById('collectionsEmpty');
+const collectionDetailModal = document.getElementById('collectionDetailModal');
+const collectionDetailBackdrop = document.getElementById('collectionDetailBackdrop');
+const collectionDetailCloseBtn = document.getElementById('collectionDetailCloseBtn');
+const collectionDetailContent = document.getElementById('collectionDetailContent');
 const openChatBtn = document.getElementById('openChatBtn');
 const chatBackBtn = document.getElementById('chatBackBtn');
 const plantDetailsView = document.getElementById('plantDetailsView');
@@ -17,6 +25,12 @@ const plantChatPanel = document.getElementById('plantChatPanel');
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const sendChatBtn = document.getElementById('sendChatBtn');
+
+const STORAGE_KEYS = {
+  latestScan: 'plantdex.latestScan',
+  scanHistory: 'plantdex.scanHistory',
+  collections: 'plantdex.collections'
+};
 
 // IP Camera elements
 const ipCameraUrl = document.getElementById('ipCameraUrl');
@@ -26,6 +40,160 @@ const connectIpCamera = document.getElementById('connectIpCamera');
 
 let ipCameraRefreshInterval = null;
 let currentPlantContext = '';
+let latestScanData = null;
+let scanHistory = [];
+let collectionPlants = [];
+
+function loadStoredJson(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+
+function persistState() {
+  localStorage.setItem(STORAGE_KEYS.latestScan, JSON.stringify(latestScanData));
+  localStorage.setItem(STORAGE_KEYS.scanHistory, JSON.stringify(scanHistory));
+  localStorage.setItem(STORAGE_KEYS.collections, JSON.stringify(collectionPlants));
+}
+
+function formatShortDate(isoDate) {
+  try {
+    return new Date(isoDate).toLocaleString();
+  } catch {
+    return 'Unknown time';
+  }
+}
+
+function renderScanHistory() {
+  scanHistoryList.innerHTML = '';
+
+  if (!scanHistory.length) {
+    const li = document.createElement('li');
+    li.className = 'history-empty';
+    li.textContent = 'No scans yet.';
+    scanHistoryList.appendChild(li);
+    return;
+  }
+
+  scanHistory.forEach((entry) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'history-item-btn';
+    button.innerHTML = `
+      <span class="history-name">${entry.plant_name || 'Unknown Plant'}</span>
+      <span class="history-meta">${entry.scientific_name || 'Unknown'} · ${formatShortDate(entry.scanned_at)}</span>
+    `;
+
+    button.addEventListener('click', () => {
+      latestScanData = entry.data;
+      persistState();
+      displayPlantResults(entry.data, { recordHistory: false });
+      setActiveTab('home');
+    });
+
+    li.appendChild(button);
+    scanHistoryList.appendChild(li);
+  });
+}
+
+function renderCollections() {
+  collectionsList.innerHTML = '';
+
+  if (!collectionPlants.length) {
+    collectionsEmpty.style.display = 'block';
+    return;
+  }
+
+  collectionsEmpty.style.display = 'none';
+
+  collectionPlants.forEach((entry) => {
+    const card = document.createElement('div');
+    card.className = 'collection-card';
+    card.innerHTML = `
+      <h4>${entry.plant_name || 'Unknown Plant'}</h4>
+      <p class="collection-scientific">${entry.scientific_name || 'Unknown'}</p>
+      <p class="collection-meta">Saved: ${formatShortDate(entry.saved_at)}</p>
+      <div class="collection-actions">
+        <button type="button" class="collection-open">Open</button>
+        <button type="button" class="collection-remove">Remove</button>
+      </div>
+    `;
+
+    card.querySelector('.collection-open').addEventListener('click', () => {
+      openCollectionDetailModal(entry.data);
+    });
+
+    card.querySelector('.collection-remove').addEventListener('click', () => {
+      collectionPlants = collectionPlants.filter((x) => x.id !== entry.id);
+      persistState();
+      renderCollections();
+    });
+
+    collectionsList.appendChild(card);
+  });
+}
+
+function openCollectionDetailModal(data) {
+  const nativeRegions = Array.isArray(data.native_regions) && data.native_regions.length
+    ? data.native_regions.join(', ')
+    : 'Unknown';
+
+  const careTips = Array.isArray(data.care_tips) && data.care_tips.length
+    ? data.care_tips.map((tip) => `<li>${tip}</li>`).join('')
+    : '<li>No care tips available</li>';
+
+  collectionDetailContent.innerHTML = `
+    <h4 class="detail-name">${data.plant_name || 'Unknown Plant'}</h4>
+    <p class="detail-scientific">${data.scientific_name || 'Unknown'}</p>
+    <p class="detail-identified">Identified by: ${data.identified_by || 'PlantDex model'}</p>
+    <div class="detail-grid">
+      <div class="detail-item"><span>Plant Type</span><p>${data.plant_type || 'Unknown'}</p></div>
+      <div class="detail-item"><span>Bloom Season</span><p>${data.bloom_season || 'Unknown'}</p></div>
+      <div class="detail-item"><span>Toxicity</span><p>${data.toxicity || 'Unknown'}</p></div>
+      <div class="detail-item"><span>Confidence</span><p>${Math.round((data.confidence || 0) * 100)}%</p></div>
+    </div>
+    <div class="detail-block">
+      <h5>Description</h5>
+      <p>${data.description || 'No description available.'}</p>
+    </div>
+    <div class="detail-block">
+      <h5>Native Regions</h5>
+      <p>${nativeRegions}</p>
+    </div>
+    <div class="detail-block">
+      <h5>Care Tips</h5>
+      <ul class="detail-care-list">${careTips}</ul>
+    </div>
+  `;
+
+  collectionDetailModal.classList.remove('is-hidden');
+  collectionDetailModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeCollectionDetailModal() {
+  collectionDetailModal.classList.add('is-hidden');
+  collectionDetailModal.setAttribute('aria-hidden', 'true');
+}
+
+function initializeStoredState() {
+  latestScanData = loadStoredJson(STORAGE_KEYS.latestScan, null);
+  scanHistory = loadStoredJson(STORAGE_KEYS.scanHistory, []);
+  collectionPlants = loadStoredJson(STORAGE_KEYS.collections, []);
+
+  renderScanHistory();
+  renderCollections();
+
+  if (latestScanData) {
+    displayPlantResults(latestScanData, { recordHistory: false });
+  }
+}
 
 function setActiveTab(tabName) {
   navItems.forEach((item) => {
@@ -126,7 +294,9 @@ async function capturePhotoFromVideo() {
   return canvas.toDataURL('image/jpeg', 0.95);
 }
 
-function displayPlantResults(data) {
+function displayPlantResults(data, options = {}) {
+  const { recordHistory = true } = options;
+
   document.getElementById('resultPlantName').textContent = data.plant_name || '---';
   document.getElementById('resultScientificName').textContent = `(${data.scientific_name || 'Unknown'})`;
   document.getElementById('resultIdentifiedBy').textContent = `Identified by: ${data.identified_by || 'PlantDex model'}`;
@@ -167,6 +337,22 @@ function displayPlantResults(data) {
   chatMessages.innerHTML = '';
   appendChatMessage('assistant', 'Ask me anything about this plant. I can help with care, bloom timing, and safety notes.');
   closePlantChat();
+
+  latestScanData = data;
+  if (recordHistory) {
+    const newEntry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+      scanned_at: new Date().toISOString(),
+      plant_name: data.plant_name || 'Unknown Plant',
+      scientific_name: data.scientific_name || 'Unknown',
+      data
+    };
+
+    scanHistory = [newEntry, ...scanHistory].slice(0, 25);
+  }
+
+  persistState();
+  renderScanHistory();
 
   emptyState.style.display = 'none';
   plantResults.classList.remove('hidden');
@@ -223,8 +409,37 @@ async function sendPlantChatMessage() {
 }
 
 function clearResults() {
-  plantResults.classList.add('hidden');
-  emptyState.style.display = 'flex';
+  openCamera();
+}
+
+function addCurrentPlantToCollection() {
+  if (!latestScanData) {
+    alert('Scan a plant first before adding to collections.');
+    return;
+  }
+
+  const identity = `${latestScanData.scientific_name || ''}::${latestScanData.plant_name || ''}`.toLowerCase();
+  const exists = collectionPlants.some((entry) => {
+    const other = `${entry.scientific_name || ''}::${entry.plant_name || ''}`.toLowerCase();
+    return other === identity;
+  });
+
+  if (exists) {
+    alert('This plant is already in your collection.');
+    return;
+  }
+
+  collectionPlants.unshift({
+    id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    saved_at: new Date().toISOString(),
+    plant_name: latestScanData.plant_name || 'Unknown Plant',
+    scientific_name: latestScanData.scientific_name || 'Unknown',
+    data: latestScanData
+  });
+
+  persistState();
+  renderCollections();
+  alert('Plant added to Collections.');
 }
 
 async function scanPlant(imageBase64) {
@@ -294,8 +509,11 @@ shutterButton.addEventListener('click', async () => {
 });
 
 clearResultsBtn.addEventListener('click', clearResults);
+addToCollectionBtn.addEventListener('click', addCurrentPlantToCollection);
 openChatBtn.addEventListener('click', openPlantChat);
 chatBackBtn.addEventListener('click', closePlantChat);
+collectionDetailCloseBtn.addEventListener('click', closeCollectionDetailModal);
+collectionDetailBackdrop.addEventListener('click', closeCollectionDetailModal);
 sendChatBtn.addEventListener('click', sendPlantChatMessage);
 chatInput.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') {
@@ -374,3 +592,5 @@ function stopIpCameraStream() {
 window.addEventListener('beforeunload', () => {
   stopIpCameraStream();
 });
+
+initializeStoredState();

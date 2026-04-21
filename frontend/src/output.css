@@ -612,3 +612,211 @@ body.app-body {
   background: #3a6c2f;
   transform: scale(0.98);
 }
+.history-section {
+  margin-top: 16px;
+}
+.history-section h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #4b5563;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.history-item-btn {
+  width: 100%;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.history-name {
+  display: block;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 700;
+}
+.history-meta {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  margin-top: 3px;
+}
+.history-empty {
+  color: #9ca3af;
+  font-size: 13px;
+  padding: 8px 0;
+}
+.collections-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.collections-empty {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 13px;
+}
+.collection-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+}
+.collection-card h4 {
+  font-size: 15px;
+  color: #1f2937;
+  font-weight: 700;
+}
+.collection-scientific {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 3px;
+}
+.collection-meta {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 6px;
+}
+.collection-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.collection-open,
+.collection-remove {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.collection-open {
+  background: #e8f5e9;
+  color: #2f5d2a;
+}
+.collection-remove {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.detail-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+}
+.detail-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+}
+.detail-modal-card {
+  position: relative;
+  width: min(92vw, 460px);
+  max-height: 84dvh;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 20px 44px rgba(2, 6, 23, 0.35);
+  padding: 14px;
+}
+.detail-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.detail-modal-header h3 {
+  font-size: 16px;
+  color: #1f2937;
+  font-weight: 700;
+}
+.detail-modal-close {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2f5d2a;
+  cursor: pointer;
+}
+.detail-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+}
+.detail-scientific {
+  font-size: 14px;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 2px;
+}
+.detail-identified {
+  font-size: 12px;
+  color: #4b5563;
+  margin-top: 4px;
+}
+.detail-grid {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.detail-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 8px;
+}
+.detail-item span {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #6b7280;
+  font-weight: 700;
+}
+.detail-item p {
+  font-size: 13px;
+  color: #1f2937;
+  margin-top: 2px;
+}
+.detail-block {
+  margin-top: 12px;
+}
+.detail-block h5 {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+.detail-block p {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.45;
+}
+.detail-care-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.detail-care-list li {
+  font-size: 13px;
+  color: #374151;
+  padding-left: 14px;
+  position: relative;
+}
+.detail-care-list li::before {
+  content: "\2022";
+  position: absolute;
+  left: 0;
+  color: #4a7c3f;
+}

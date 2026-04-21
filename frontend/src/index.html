@@ -69,6 +69,7 @@
                             Warning: Plant details are AI-generated. Please double-check bloom season, toxicity, and care information before acting on it.
                         </p>
 
+                        <button id="addToCollectionBtn" class="btn-secondary" type="button">Add to Collection</button>
                         <button id="openChatBtn" class="btn-secondary" type="button">Chat about this plant</button>
                         <button id="clearResultsBtn" class="btn-primary" type="button">Scan Another Plant</button>
                         </div>
@@ -91,6 +92,11 @@
                     <ion-icon name="leaf-outline"></ion-icon>
                     <p>Scan a plant with the camera to get started!</p>
                 </div>
+
+                <div class="history-section">
+                    <h3>Scan History</h3>
+                    <ul id="scanHistoryList" class="history-list"></ul>
+                </div>
             </section>
 
             <section class="tab-panel" data-panel="search">
@@ -101,6 +107,8 @@
             <section class="tab-panel" data-panel="collections">
                 <h2>Collections</h2>
                 <p>View your saved plant library.</p>
+                <div id="collectionsList" class="collections-list"></div>
+                <p id="collectionsEmpty" class="collections-empty">No saved plants yet. Scan a plant and tap Add to Collection.</p>
             </section>
 
             <section class="tab-panel" data-panel="profile">
@@ -124,6 +132,17 @@
                 <img src="../assets/Shutter.png" alt="Shutter button">
             </button>
             <canvas id="photoCanvas" style="display: none;"></canvas>
+        </section>
+
+        <section id="collectionDetailModal" class="detail-modal is-hidden" aria-hidden="true">
+            <div class="detail-modal-backdrop" id="collectionDetailBackdrop"></div>
+            <div class="detail-modal-card" role="dialog" aria-modal="true" aria-label="Plant details from collection">
+                <div class="detail-modal-header">
+                    <h3>Plant Details</h3>
+                    <button id="collectionDetailCloseBtn" class="detail-modal-close" type="button">Close</button>
+                </div>
+                <div id="collectionDetailContent" class="detail-modal-content"></div>
+            </div>
         </section>
 
         <nav class="nav-bar" aria-label="Bottom navigation">
