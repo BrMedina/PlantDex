@@ -17,7 +17,11 @@
 
         <main class="main-content">
             <section class="tab-panel is-active" data-panel="home">
-                <h2>Latest Scan</h2>
+                <div class="latest-scan-panel-header">
+                    <h2>Latest Scan</h2>
+                    <button id="toggleLatestScanBtn" class="latest-scan-toggle" type="button" aria-expanded="true">Minimize</button>
+                </div>
+                <div id="latestScanPanelBody">
                 <div id="plantResults" class="plant-results hidden">
                     <div class="plant-card">
                         <div id="plantDetailsView">
@@ -30,9 +34,15 @@
                                 <p id="resultScientificName" class="scientific-name">---</p>
                                 <p id="resultIdentifiedBy" class="identified-by">Identified by: ---</p>
                             </div>
-                            <div class="confidence-badge">
+                        </div>
+
+                        <div class="confidence-meter">
+                            <div class="confidence-meter-head">
+                                <span class="confidence-title">AI Confidence</span>
                                 <span id="resultConfidence" class="confidence-value">0%</span>
-                                <span class="confidence-label">Confidence</span>
+                            </div>
+                            <div class="confidence-track" role="progressbar" aria-label="AI confidence" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                <div id="resultConfidenceBar" class="confidence-fill" style="width: 0%;"></div>
                             </div>
                         </div>
 
@@ -101,6 +111,7 @@
                     <ul id="scanHistoryList" class="history-list"></ul>
                     <button id="clearAllHistoryBtn" class="btn-danger" type="button">Clear All History</button>
                 </div>
+                </div>
             </section>
 
             <section class="tab-panel" data-panel="search">
@@ -122,20 +133,16 @@
         </main>
 
         <section id="cameraPanel" class="camera-panel" aria-hidden="true">
-            <div class="ip-camera-config">
-                <input id="ipCameraUrl" type="text" placeholder="http://192.168.1.x:8080/shot.jpg" class="ip-camera-input">
-                <button id="connectIpCamera" class="btn-connect" type="button">Connect</button>
-            </div>
             <div class="camera-screen-wrap">
-                <img id="ipCameraStream" src="" alt="IP Camera Stream" class="ip-camera-img">
+                <video id="webcam" autoplay playsinline muted aria-label="Live camera preview"></video>
                 <div class="camera-overlay"></div>
             </div>
-            <p id="ipCameraStatus" class="ip-camera-status"></p>
 
             <button id="shutterButton" class="shutter-btn" type="button" aria-label="Take photo">
-                <img src="../assets/Shutter.png" alt="Shutter button">
+                <ion-icon name="aperture-outline"></ion-icon>
             </button>
             <canvas id="photoCanvas" style="display: none;"></canvas>
+            <input id="cameraFileInput" type="file" accept="image/*" capture="environment" style="display: none;" />
         </section>
 
         <section id="collectionDetailModal" class="detail-modal is-hidden" aria-hidden="true">
@@ -167,7 +174,7 @@
 
                 <div class="fab-slot" aria-hidden="true">
                     <button id="fabButton" class="fab" type="button" aria-label="Open camera">
-                        <img src="../assets/Logo.png" alt="PlantDex camera">
+                        <ion-icon name="camera-outline"></ion-icon>
                     </button>
                 </div>
 

@@ -1,8 +1,9 @@
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:5000`;
 
 const navItems = Array.from(document.querySelectorAll('.nav-item'));
 const panels = Array.from(document.querySelectorAll('.tab-panel'));
+const homePanel = document.querySelector('.tab-panel[data-panel="home"]');
 const fabButton = document.getElementById('fabButton');
 const cameraPanel = document.getElementById('cameraPanel');
 const shutterButton = document.getElementById('shutterButton');
@@ -11,6 +12,7 @@ const plantResults = document.getElementById('plantResults');
 const emptyState = document.getElementById('emptyState');
 const clearResultsBtn = document.getElementById('clearResultsBtn');
 const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
+const toggleLatestScanBtn = document.getElementById('toggleLatestScanBtn');
 const addToCollectionBtn = document.getElementById('addToCollectionBtn');
 const scanHistoryList = document.getElementById('scanHistoryList');
 const collectionsList = document.getElementById('collectionsList');
@@ -28,6 +30,9 @@ const chatInput = document.getElementById('chatInput');
 const sendChatBtn = document.getElementById('sendChatBtn');
 const resultPhotoWrap = document.getElementById('resultPhotoWrap');
 const resultPlantPhoto = document.getElementById('resultPlantPhoto');
+const latestScanPanelBody = document.getElementById('latestScanPanelBody');
+const webcam = document.getElementById('webcam');
+const cameraFileInput = document.getElementById('cameraFileInput');
 
 const STORAGE_KEYS = {
   latestScan: 'plantdex.latestScan',
@@ -35,17 +40,29 @@ const STORAGE_KEYS = {
   collections: 'plantdex.collections'
 };
 
-// IP Camera elements
-const ipCameraUrl = document.getElementById('ipCameraUrl');
-const ipCameraStream = document.getElementById('ipCameraStream');
-const ipCameraStatus = document.getElementById('ipCameraStatus');
-const connectIpCamera = document.getElementById('connectIpCamera');
-
-let ipCameraRefreshInterval = null;
+let cameraStream = null;
+let isFileCameraFallback = false;
 let currentPlantContext = '';
 let latestScanData = null;
 let scanHistory = [];
 let collectionPlants = [];
+let isLatestScanMinimized = false;
+
+function openFileCameraFallback() {
+  isFileCameraFallback = true;
+  if (cameraFileInput) {
+    cameraFileInput.value = '';
+    cameraFileInput.click();
+  }
+}
+
+function setLatestScanMinimized(nextState) {
+  isLatestScanMinimized = !!nextState;
+  latestScanPanelBody.classList.toggle('is-hidden', isLatestScanMinimized);
+  homePanel.classList.toggle('is-minimized', isLatestScanMinimized);
+  toggleLatestScanBtn.textContent = isLatestScanMinimized ? 'Expand' : 'Minimize';
+  toggleLatestScanBtn.setAttribute('aria-expanded', String(!isLatestScanMinimized));
+}
 
 function loadStoredJson(key, fallback) {
   try {
@@ -259,24 +276,49 @@ function setActiveTab(tabName) {
   });
 }
 
-function stopIpCameraStream() {
-  if (ipCameraRefreshInterval) {
-    clearInterval(ipCameraRefreshInterval);
-    ipCameraRefreshInterval = null;
+function stopDeviceCameraStream() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach((track) => track.stop());
+    cameraStream = null;
   }
-  ipCameraStream.src = '';
-  ipCameraStatus.textContent = '';
+
+  if (webcam) {
+    webcam.srcObject = null;
+  }
 }
 
 function closeCamera() {
   cameraPanel.classList.remove('is-open');
   cameraPanel.setAttribute('aria-hidden', 'true');
   fabButton.classList.remove('is-open');
-  stopIpCameraStream();
+  stopDeviceCameraStream();
 }
 
 async function openCamera() {
-  // Open camera panel (IP camera mode only)
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    openFileCameraFallback();
+    return;
+  }
+
+  isFileCameraFallback = false;
+  stopDeviceCameraStream();
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' }
+      },
+      audio: false
+    });
+
+    webcam.srcObject = cameraStream;
+    await webcam.play();
+  } catch (error) {
+    openFileCameraFallback();
+    console.error('Camera permission error:', error);
+    return;
+  }
+
   cameraPanel.classList.add('is-open');
   cameraPanel.setAttribute('aria-hidden', 'false');
   fabButton.classList.add('is-open');
@@ -291,45 +333,17 @@ function toggleCamera() {
   openCamera();
 }
 
-let currentIpCameraUrl = null;
-
 async function capturePhotoFromVideo() {
-  // If IP camera is connected, fetch the latest frame directly
-  if (currentIpCameraUrl) {
-    try {
-      console.log('Fetching frame from:', currentIpCameraUrl);
-      const response = await fetch(currentIpCameraUrl + '?t=' + Date.now(), {
-        method: 'GET'
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch frame`);
-      }
-      
-      const blob = await response.blob();
-      console.log('Fetched blob size:', blob.size, 'bytes');
-      
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          console.log('Base64 data length:', reader.result.length);
-          resolve(reader.result);
-        };
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error('Error fetching IP camera frame:', error);
-      alert('Failed to fetch frame from IP camera. Check connection.');
-      return null;
-    }
+  if (!cameraStream || !webcam.srcObject) {
+    alert('Camera is not active yet.');
+    return null;
   }
-  
-  // Fallback: try to capture from displayed image element
+
   const canvas = photoCanvas;
   const context = canvas.getContext('2d');
 
-  let width = ipCameraStream.naturalWidth || ipCameraStream.width || 640;
-  let height = ipCameraStream.naturalHeight || ipCameraStream.height || 480;
+  let width = webcam.videoWidth || 640;
+  let height = webcam.videoHeight || 480;
 
   if (width === 0) width = 640;
   if (height === 0) height = 480;
@@ -338,10 +352,10 @@ async function capturePhotoFromVideo() {
   canvas.height = height;
   
   try {
-    context.drawImage(ipCameraStream, 0, 0, width, height);
+    context.drawImage(webcam, 0, 0, width, height);
   } catch (error) {
     console.error('Error drawing image:', error);
-    alert('Failed to capture image. Make sure camera is connected.');
+    alert('Failed to capture image from camera preview.');
     return null;
   }
 
@@ -364,7 +378,16 @@ function displayPlantResults(data, options = {}) {
   document.getElementById('resultScientificName').textContent = `(${data.scientific_name || 'Unknown'})`;
   document.getElementById('resultIdentifiedBy').textContent = `Identified by: ${data.identified_by || 'PlantDex model'}`;
   document.getElementById('resultPlantType').textContent = data.plant_type || '---';
-  document.getElementById('resultConfidence').textContent = `${Math.round((data.confidence || 0) * 100)}%`;
+  const confidencePercent = Math.max(0, Math.min(100, Math.round((data.confidence || 0) * 100)));
+  document.getElementById('resultConfidence').textContent = `${confidencePercent}%`;
+  const confidenceBar = document.getElementById('resultConfidenceBar');
+  const confidenceTrack = confidenceBar ? confidenceBar.parentElement : null;
+  if (confidenceBar) {
+    confidenceBar.style.width = `${confidencePercent}%`;
+  }
+  if (confidenceTrack) {
+    confidenceTrack.setAttribute('aria-valuenow', String(confidencePercent));
+  }
   document.getElementById('resultDescription').textContent = data.description || '---';
   document.getElementById('resultBloomSeason').textContent = data.bloom_season || '---';
   document.getElementById('resultToxicity').textContent = data.toxicity || 'Unknown';
@@ -421,12 +444,44 @@ function displayPlantResults(data, options = {}) {
   plantResults.classList.remove('hidden');
 }
 
-function appendChatMessage(role, text) {
+function appendChatMessage(role, text, options = {}) {
   const bubble = document.createElement('div');
   bubble.className = `chat-message ${role}`;
-  bubble.textContent = text;
   chatMessages.appendChild(bubble);
+
+  if (role === 'assistant' && options.typewriter) {
+    const content = text || '';
+    const charCount = Math.max(content.length, 1);
+    const totalDurationMs = Math.min(2600, Math.max(850, charCount * 20));
+    const perCharDelayMs = Math.max(12, Math.round(totalDurationMs / charCount));
+
+    bubble.classList.add('is-typing');
+    bubble.textContent = '';
+
+    return new Promise((resolve) => {
+      let index = 0;
+
+      const writeNextChar = () => {
+        bubble.textContent = content.slice(0, index);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        if (index >= charCount) {
+          bubble.classList.remove('is-typing');
+          resolve();
+          return;
+        }
+
+        index += 1;
+        setTimeout(writeNextChar, perCharDelayMs);
+      };
+
+      writeNextChar();
+    });
+  }
+
+  bubble.textContent = text;
   chatMessages.scrollTop = chatMessages.scrollHeight;
+  return Promise.resolve();
 }
 
 function openPlantChat() {
@@ -463,9 +518,9 @@ async function sendPlantChatMessage() {
     }
 
     const payload = await response.json();
-    appendChatMessage('assistant', payload.reply || 'No reply received.');
+    await appendChatMessage('assistant', payload.reply || 'No reply received.', { typewriter: true });
   } catch (error) {
-    appendChatMessage('assistant', `I could not respond right now: ${error.message}`);
+    await appendChatMessage('assistant', `I could not respond right now: ${error.message}`, { typewriter: true });
   } finally {
     sendChatBtn.disabled = false;
   }
@@ -500,6 +555,7 @@ function clearAllHistory() {
 
   plantResults.classList.add('hidden');
   emptyState.style.display = 'flex';
+  setLatestScanMinimized(false);
 
   setActiveTab('home');
 }
@@ -579,7 +635,7 @@ async function scanPlant(imageBase64) {
     alert(`Failed to scan plant: ${error.message}`);
   } finally {
     shutterButton.disabled = false;
-    shutterButton.innerHTML = '<img src="../assets/Shutter.png" alt="Shutter button">';
+    shutterButton.innerHTML = '<ion-icon name="aperture-outline"></ion-icon>';
   }
 }
 
@@ -597,14 +653,45 @@ shutterButton.addEventListener('click', async () => {
   shutterButton.classList.add('is-pressed');
   setTimeout(() => shutterButton.classList.remove('is-pressed'), 140);
 
+  if (isFileCameraFallback) {
+    openFileCameraFallback();
+    return;
+  }
+
   const photoBase64 = await capturePhotoFromVideo();
   if (photoBase64) {
     await scanPlant(photoBase64);
   }
 });
 
+cameraFileInput.addEventListener('change', async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const imageBase64 = typeof reader.result === 'string' ? reader.result : null;
+    if (!imageBase64) {
+      alert('Failed to read selected image. Please try again.');
+      return;
+    }
+
+    await scanPlant(imageBase64);
+    closeCamera();
+  };
+
+  reader.onerror = () => {
+    alert('Failed to load image from camera. Please try again.');
+  };
+
+  reader.readAsDataURL(file);
+});
+
 clearResultsBtn.addEventListener('click', clearResults);
 clearAllHistoryBtn.addEventListener('click', clearAllHistory);
+toggleLatestScanBtn.addEventListener('click', () => setLatestScanMinimized(!isLatestScanMinimized));
 addToCollectionBtn.addEventListener('click', addCurrentPlantToCollection);
 openChatBtn.addEventListener('click', openPlantChat);
 chatBackBtn.addEventListener('click', closePlantChat);
@@ -618,75 +705,8 @@ chatInput.addEventListener('keydown', (event) => {
   }
 });
 
-// IP Camera connection handler
-connectIpCamera.addEventListener('click', () => {
-  const url = ipCameraUrl.value.trim();
-  if (!url) {
-    ipCameraStatus.textContent = 'Enter IP camera URL';
-    return;
-  }
-  connectToIpCamera(url);
-});
-
-function connectToIpCamera(url) {
-  ipCameraStatus.textContent = 'Connecting...';
-  
-  // Normalize URL - if just base URL, try /shot.jpg for IP Webcam
-  let streamUrl = url;
-  if (!url.includes('/shot.jpg') && !url.includes('/video') && !url.includes('/mjpeg')) {
-    streamUrl = url.replace(/\/$/, '') + '/shot.jpg';
-  }
-  
-  // Test if the URL is accessible by trying to fetch one frame
-  console.log('Testing IP camera URL:', streamUrl);
-  
-  fetch(streamUrl + '?t=' + Date.now(), { method: 'GET' })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      return response.blob();
-    })
-    .then(blob => {
-      console.log('Successfully fetched frame, size:', blob.size, 'bytes');
-      ipCameraStatus.textContent = 'Connected!';
-      startIpCameraStream(streamUrl);
-    })
-    .catch(error => {
-      console.error('Connection error:', error);
-      ipCameraStatus.textContent = `Failed: ${error.message}. Try: http://192.168.1.x:8080/shot.jpg`;
-    });
-}
-
-function startIpCameraStream(url) {
-  // Store URL for direct frame fetching
-  currentIpCameraUrl = url;
-  
-  // Also display the stream in the img element for preview
-  ipCameraStream.src = url + '?t=' + Date.now();
-
-  // Refresh preview every 200ms for smoother video effect (5 fps)
-  if (ipCameraRefreshInterval) {
-    clearInterval(ipCameraRefreshInterval);
-  }
-
-  ipCameraRefreshInterval = setInterval(() => {
-    ipCameraStream.src = url + '?t=' + Date.now();
-  }, 200);
-}
-
-function stopIpCameraStream() {
-  if (ipCameraRefreshInterval) {
-    clearInterval(ipCameraRefreshInterval);
-    ipCameraRefreshInterval = null;
-  }
-  ipCameraStream.src = '';
-  ipCameraStatus.textContent = '';
-  currentIpCameraUrl = null;
-}
-
 window.addEventListener('beforeunload', () => {
-  stopIpCameraStream();
+  stopDeviceCameraStream();
 });
 
 initializeStoredState();

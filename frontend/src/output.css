@@ -231,6 +231,16 @@ body.app-body {
 .tab-panel.is-active {
   display: block;
 }
+.latest-scan-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.latest-scan-panel-header h2 {
+  margin-bottom: 0;
+}
 .camera-panel {
   position: fixed;
   left: 50%;
@@ -270,19 +280,6 @@ body.app-body {
   font-weight: 600;
   cursor: pointer;
 }
-.ip-camera-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #111827;
-  display: block;
-}
-.ip-camera-status {
-  font-size: 11px;
-  color: #6b7280;
-  margin-top: 8px;
-  text-align: center;
-}
 .camera-screen-wrap {
   width: 100%;
   aspect-ratio: 9 / 16;
@@ -295,8 +292,8 @@ body.app-body {
 }
 #webcam {
   width: 100%;
-  height: 90%;
-  object-fit: fill;
+  height: 100%;
+  object-fit: cover;
   background: #111827;
 }
 .camera-overlay {
@@ -319,6 +316,10 @@ body.app-body {
   display: grid;
   place-items: center;
   backdrop-filter: blur(3px);
+}
+.shutter-btn ion-icon {
+  font-size: 34px;
+  color: #ffffff;
 }
 .shutter-inner {
   width: 46px;
@@ -395,6 +396,10 @@ body.app-body {
   border-radius: 999px;
   object-fit: contain;
 }
+.fab ion-icon {
+  font-size: 24px;
+  color: #ffffff;
+}
 .fab.is-open {
   transform: scale(1.05);
   box-shadow: 0 10px 24px rgba(74, 124, 63, 0.45);
@@ -424,6 +429,23 @@ body.app-body {
   padding: 22px;
   box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
 }
+.latest-scan-toggle {
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab-panel.is-minimized {
+  min-height: 0;
+  padding-bottom: 12px;
+}
+.tab-panel.is-minimized .latest-scan-panel-header {
+  margin-bottom: 0;
+}
 .result-photo-wrap {
   width: 100%;
   border-radius: 14px;
@@ -440,10 +462,10 @@ body.app-body {
 }
 .plant-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .plant-name-group {
   flex: 1;
@@ -464,24 +486,41 @@ body.app-body {
   color: #4b5563;
   margin-top: 4px;
 }
-.confidence-badge {
+.confidence-meter {
+  margin-bottom: 14px;
+}
+.confidence-meter-head {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 70px;
-  height: 70px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #4a7c3f 0%, #5a9c4f 100%);
-  color: #ffffff;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 10px;
 }
 .confidence-value {
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 700;
+  color: #1f2937;
 }
-.confidence-label {
+.confidence-title {
   font-size: 11px;
-  opacity: 0.9;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+.confidence-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.confidence-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4a7c3f 0%, #69a85a 100%);
+  transition: width 0.28s ease;
 }
 .plant-type-tag {
   display: inline-block;
@@ -910,6 +949,24 @@ body.app-body {
   align-self: flex-start;
   background: #f3f4f6;
   color: #1f2937;
+}
+.chat-message.assistant.is-typing::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: #4b5563;
+  margin-left: 2px;
+  vertical-align: -0.12em;
+  animation: chat-caret-blink 0.8s steps(1, end) infinite;
+}
+@keyframes chat-caret-blink {
+  0%, 49% {
+    opacity: 1;
+  }
+  50%, 100% {
+    opacity: 0;
+  }
 }
 .chat-composer {
   display: flex;
