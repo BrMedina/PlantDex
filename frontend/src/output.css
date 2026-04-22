@@ -1,4 +1,5 @@
 /*! tailwindcss v4.2.4 | MIT License | https://tailwindcss.com */
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
 @layer theme, base, components, utilities;
 @layer theme {
   :root, :host {
@@ -178,7 +179,7 @@ body.app-body {
   min-height: 100dvh;
   background: #efefef;
   color: #1f2937;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 .app-shell {
   min-height: 100dvh;
