@@ -15,6 +15,7 @@ CORS(app)
 
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 PLANTNET_API_KEY = os.getenv("PLANTNET_API_KEY", "").strip().strip('"').strip("'")
+PLANTNET_BASE_URL = os.getenv("PLANTNET_BASE_URL", "https://my-api.plantnet.org").strip().rstrip('/')
 
 BOTANIST_SYSTEM_PROMPT = """You are BotanistAI, a seasoned botanist with an insatiable passion for the intricate world of flora. Your role is to serve as a deeply knowledgeable and enthusiastic guide for users who are looking to identify, understand, and care for plants of all species. When a user presents you with a description or an image of a plant, you should approach the task with scientific rigor. You speak with a blend of academic precision and approachable warmth, often sharing fascinating facts about a plant's evolutionary history or its specific ecological niche. Your expertise extends to plant life cycles, blooming patterns, pollination methods, and environmental triggers. You are also tasked with offering practical advice on soil composition, light requirements, and hydration needs. You should be mindful of plant safety, always providing warnings if a species is toxic or invasive. Every response should foster a deeper appreciation for the natural world."""
 
@@ -173,7 +174,8 @@ def scan_plant():
         plantnet_results, plantnet_error = query_plantnet(image_base64)
 
         if plantnet_error:
-            return jsonify({'error': plantnet_error}), 400
+            error_code = 503 if 'could not connect' in plantnet_error.lower() else 400
+            return jsonify({'error': plantnet_error}), error_code
 
         if not plantnet_results:
             return jsonify({'error': 'Could not identify plant. Try a clearer close-up image.'}), 400
@@ -199,40 +201,63 @@ def query_plantnet(image_base64):
             'lang': 'en'
         }
 
-        endpoint = 'https://my-api.plantnet.org/v2/identify/all'
+        endpoint_candidates = [
+            f"{PLANTNET_BASE_URL}/v2/identify/all",
+            'https://my-api.plantnet.org/v2/identify/all',
+            'https://api.plantnet.org/v2/identify/all'
+        ]
+        endpoint_candidates = list(dict.fromkeys(endpoint_candidates))
         organ_candidates = ['leaf', 'flower', 'fruit', 'bark', 'auto']
 
         response = None
-        for organ in organ_candidates:
-            files = {'images': ('plant.jpg', BytesIO(image_data), 'image/jpeg')}
-            response = requests.post(
-                endpoint,
-                files=files,
-                data={'organs': organ},
-                params=params,
-                timeout=30
-            )
+        last_connection_error = None
+        for endpoint in endpoint_candidates:
+            for organ in organ_candidates:
+                files = {'images': ('plant.jpg', BytesIO(image_data), 'image/jpeg')}
 
-            print(f"PlantNet endpoint: {endpoint}")
-            print(f"PlantNet organ hint: {organ}")
-            print(f"PlantNet response status: {response.status_code}")
+                try:
+                    response = requests.post(
+                        endpoint,
+                        files=files,
+                        data={'organs': organ},
+                        params=params,
+                        timeout=30
+                    )
+                except requests.exceptions.ConnectionError as conn_error:
+                    last_connection_error = conn_error
+                    print(f"PlantNet connection error at {endpoint}: {conn_error}")
+                    response = None
+                    break
 
-            if response.status_code == 200:
+                print(f"PlantNet endpoint: {endpoint}")
+                print(f"PlantNet organ hint: {organ}")
+                print(f"PlantNet response status: {response.status_code}")
+
+                if response.status_code == 200:
+                    break
+
+                if response.status_code == 404:
+                    try:
+                        error_body = response.json()
+                        message = str(error_body.get('message', '')).lower()
+                        print(f"PlantNet 404 body: {error_body}")
+                        if message == 'species not found':
+                            # Retry with another organ hint before giving up.
+                            continue
+                    except Exception:
+                        pass
+
+                # For other error codes, stop early and report the real API issue.
                 break
 
-            if response.status_code == 404:
-                try:
-                    error_body = response.json()
-                    message = str(error_body.get('message', '')).lower()
-                    print(f"PlantNet 404 body: {error_body}")
-                    if message == 'species not found':
-                        # Retry with another organ hint before giving up.
-                        continue
-                except Exception:
-                    pass
+            if response is not None and response.status_code == 200:
+                break
 
-            # For other error codes, stop early and report the real API issue.
-            break
+        if response is None and last_connection_error is not None:
+            return None, (
+                'PlantNet could not connect. Check internet/firewall or allow HTTPS to '
+                'my-api.plantnet.org:443 (and api.plantnet.org:443).'
+            )
 
         if response is None:
             return None, 'PlantNet request failed (no response).'

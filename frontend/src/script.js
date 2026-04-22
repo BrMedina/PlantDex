@@ -10,6 +10,7 @@ const photoCanvas = document.getElementById('photoCanvas');
 const plantResults = document.getElementById('plantResults');
 const emptyState = document.getElementById('emptyState');
 const clearResultsBtn = document.getElementById('clearResultsBtn');
+const clearAllHistoryBtn = document.getElementById('clearAllHistoryBtn');
 const addToCollectionBtn = document.getElementById('addToCollectionBtn');
 const scanHistoryList = document.getElementById('scanHistoryList');
 const collectionsList = document.getElementById('collectionsList');
@@ -25,6 +26,8 @@ const plantChatPanel = document.getElementById('plantChatPanel');
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const sendChatBtn = document.getElementById('sendChatBtn');
+const resultPhotoWrap = document.getElementById('resultPhotoWrap');
+const resultPlantPhoto = document.getElementById('resultPlantPhoto');
 
 const STORAGE_KEYS = {
   latestScan: 'plantdex.latestScan',
@@ -116,7 +119,14 @@ function renderCollections() {
   collectionPlants.forEach((entry) => {
     const card = document.createElement('div');
     card.className = 'collection-card';
+
+    const plantPhoto = entry.photo_data_url || (entry.data && entry.data.photo_data_url) || '';
+    const imageMarkup = plantPhoto
+      ? `<img class="collection-thumb" src="${plantPhoto}" alt="Saved photo of ${entry.plant_name || 'plant'}">`
+      : '';
+
     card.innerHTML = `
+      ${imageMarkup}
       <h4>${entry.plant_name || 'Unknown Plant'}</h4>
       <p class="collection-scientific">${entry.scientific_name || 'Unknown'}</p>
       <p class="collection-meta">Saved: ${formatShortDate(entry.saved_at)}</p>
@@ -149,7 +159,12 @@ function openCollectionDetailModal(data) {
     ? data.care_tips.map((tip) => `<li>${tip}</li>`).join('')
     : '<li>No care tips available</li>';
 
+  const photoMarkup = data.photo_data_url
+    ? `<img class="detail-photo" src="${data.photo_data_url}" alt="Saved photo of ${data.plant_name || 'plant'}">`
+    : '';
+
   collectionDetailContent.innerHTML = `
+    ${photoMarkup}
     <h4 class="detail-name">${data.plant_name || 'Unknown Plant'}</h4>
     <p class="detail-scientific">${data.scientific_name || 'Unknown'}</p>
     <p class="detail-identified">Identified by: ${data.identified_by || 'PlantDex model'}</p>
@@ -175,6 +190,45 @@ function openCollectionDetailModal(data) {
 
   collectionDetailModal.classList.remove('is-hidden');
   collectionDetailModal.setAttribute('aria-hidden', 'false');
+}
+
+function compressImageDataUrl(imageDataUrl, maxDimension = 720, quality = 0.82) {
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.onload = () => {
+      const width = image.naturalWidth || image.width;
+      const height = image.naturalHeight || image.height;
+
+      if (!width || !height) {
+        resolve(imageDataUrl);
+        return;
+      }
+
+      const scale = Math.min(1, maxDimension / Math.max(width, height));
+      const targetWidth = Math.max(1, Math.round(width * scale));
+      const targetHeight = Math.max(1, Math.round(height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        resolve(imageDataUrl);
+        return;
+      }
+
+      context.drawImage(image, 0, 0, targetWidth, targetHeight);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+
+    image.onerror = () => {
+      resolve(imageDataUrl);
+    };
+
+    image.src = imageDataUrl;
+  });
 }
 
 function closeCollectionDetailModal() {
@@ -297,6 +351,15 @@ async function capturePhotoFromVideo() {
 function displayPlantResults(data, options = {}) {
   const { recordHistory = true } = options;
 
+  const photoDataUrl = data.photo_data_url || '';
+  if (photoDataUrl) {
+    resultPlantPhoto.src = photoDataUrl;
+    resultPhotoWrap.classList.remove('is-hidden');
+  } else {
+    resultPlantPhoto.src = '';
+    resultPhotoWrap.classList.add('is-hidden');
+  }
+
   document.getElementById('resultPlantName').textContent = data.plant_name || '---';
   document.getElementById('resultScientificName').textContent = `(${data.scientific_name || 'Unknown'})`;
   document.getElementById('resultIdentifiedBy').textContent = `Identified by: ${data.identified_by || 'PlantDex model'}`;
@@ -412,6 +475,35 @@ function clearResults() {
   openCamera();
 }
 
+function clearAllHistory() {
+  const shouldClear = window.confirm(
+    'Clear all history? This will remove latest scan, scan history, and saved collections.'
+  );
+
+  if (!shouldClear) {
+    return;
+  }
+
+  latestScanData = null;
+  scanHistory = [];
+  collectionPlants = [];
+
+  persistState();
+  renderScanHistory();
+  renderCollections();
+
+  closeCollectionDetailModal();
+  closePlantChat();
+
+  resultPlantPhoto.src = '';
+  resultPhotoWrap.classList.add('is-hidden');
+
+  plantResults.classList.add('hidden');
+  emptyState.style.display = 'flex';
+
+  setActiveTab('home');
+}
+
 function addCurrentPlantToCollection() {
   if (!latestScanData) {
     alert('Scan a plant first before adding to collections.');
@@ -434,6 +526,7 @@ function addCurrentPlantToCollection() {
     saved_at: new Date().toISOString(),
     plant_name: latestScanData.plant_name || 'Unknown Plant',
     scientific_name: latestScanData.scientific_name || 'Unknown',
+    photo_data_url: latestScanData.photo_data_url || '',
     data: latestScanData
   });
 
@@ -453,6 +546,7 @@ async function scanPlant(imageBase64) {
 
   try {
     const base64Data = imageBase64.split(',')[1] || imageBase64;
+    const optimizedPhoto = await compressImageDataUrl(imageBase64);
     
     // Debug: Log image size and first 50 chars
     console.log('Captured image size:', base64Data.length, 'bytes');
@@ -476,6 +570,7 @@ async function scanPlant(imageBase64) {
     }
 
     const plantData = await response.json();
+    plantData.photo_data_url = optimizedPhoto;
     displayPlantResults(plantData);
     closeCamera();
     setActiveTab('home');
@@ -509,6 +604,7 @@ shutterButton.addEventListener('click', async () => {
 });
 
 clearResultsBtn.addEventListener('click', clearResults);
+clearAllHistoryBtn.addEventListener('click', clearAllHistory);
 addToCollectionBtn.addEventListener('click', addCurrentPlantToCollection);
 openChatBtn.addEventListener('click', openPlantChat);
 chatBackBtn.addEventListener('click', closePlantChat);

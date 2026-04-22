@@ -1,6 +1,13 @@
 {
+  "scripts": {
+    "build:css": "tailwindcss -i ./src/input.css -o ./src/output.css",
+    "watch:css": "tailwindcss -i ./src/input.css -o ./src/output.css --watch"
+  },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "tailwindcss": "^4.2.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.2.4"
   }
 }

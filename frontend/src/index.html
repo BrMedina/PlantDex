@@ -21,6 +21,9 @@
                 <div id="plantResults" class="plant-results hidden">
                     <div class="plant-card">
                         <div id="plantDetailsView">
+                        <div id="resultPhotoWrap" class="result-photo-wrap is-hidden">
+                            <img id="resultPlantPhoto" class="result-plant-photo" src="" alt="Captured plant photo">
+                        </div>
                         <div class="plant-header">
                             <div class="plant-name-group">
                                 <h3 id="resultPlantName" class="plant-name">---</h3>
@@ -43,12 +46,12 @@
                         </div>
 
                         <div class="result-grid">
-                            <div class="result-item">
-                                <span class="result-label">Bloom Season</span>
+                            <div class="result-item-bloom">
+                                <span class="result-label-bloom">Bloom Season</span>
                                 <p id="resultBloomSeason">---</p>
                             </div>
-                            <div class="result-item">
-                                <span class="result-label">Toxicity</span>
+                            <div class="result-item-toxic">
+                                <span class="result-label-toxic">Toxicity</span>
                                 <p id="resultToxicity">---</p>
                             </div>
                         </div>
@@ -96,6 +99,7 @@
                 <div class="history-section">
                     <h3>Scan History</h3>
                     <ul id="scanHistoryList" class="history-list"></ul>
+                    <button id="clearAllHistoryBtn" class="btn-danger" type="button">Clear All History</button>
                 </div>
             </section>
 
