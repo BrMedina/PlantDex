@@ -1,11 +1,13 @@
 {
   "stats": {
-    "scans_count": 0,
+    "scans_count": 1,
     "chat_count": 1,
-    "collections_count": 0
+    "collections_count": 1
   },
   "achievement_unlocks": {
-    "chat_once": "2026-04-22T13:27:30Z"
+    "chat_once": "2026-04-22T13:27:30Z",
+    "first_scan": "2026-04-22T13:51:17Z",
+    "save_once": "2026-04-22T13:51:26Z"
   },
   "daily": {
     "date": "2026-04-22",
@@ -25,8 +27,8 @@
         "description": "Add 1 plant to your collection today.",
         "event_type": "collection_saved",
         "target": 1,
-        "progress": 0,
-        "completed": false
+        "progress": 1,
+        "completed": true
       }
     ]
   }
