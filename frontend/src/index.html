@@ -16,7 +16,25 @@
         </header>
 
         <main class="main-content">
+            <section id="homeGamifyPanel" class="gamify-panel" aria-label="Daily challenges and achievements">
+                <div class="gamify-panel-head">
+                    <h2>Daily Challenges</h2>
+                    <div class="gamify-head-actions">
+                        <span id="dailyChallengeDate" class="gamify-date">Today</span>
+                        <button id="toggleGamifyPanelBtn" class="latest-scan-toggle" type="button" aria-expanded="true">Minimize</button>
+                    </div>
+                </div>
+                <div id="dailyChallengesList" class="daily-challenges-list"></div>
+
+                <div class="gamify-achievements-head">
+                    <h3>Beginner Achievements</h3>
+                    <span id="achievementSummary" class="achievement-summary">0/0 unlocked</span>
+                </div>
+                <div id="achievementsList" class="achievements-list"></div>
+            </section>
+
             <section class="tab-panel is-active" data-panel="home">
+
                 <div class="latest-scan-panel-header">
                     <h2>Latest Scan</h2>
                     <button id="toggleLatestScanBtn" class="latest-scan-toggle" type="button" aria-expanded="true">Minimize</button>

@@ -1,7 +1,10 @@
 import os
 import json
 import base64
+import hashlib
+import random
 import requests
+from datetime import datetime
 from io import BytesIO
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
@@ -42,6 +45,269 @@ BLOOM_DATA_BY_GENUS = {
     'hibiscus': ['May', 'June', 'July', 'August', 'September', 'October'],
     'jasminum': ['June', 'July', 'August', 'September']
 }
+
+PROGRESS_FILE = os.path.join(os.path.dirname(__file__), 'user_progress.json')
+
+BEGINNER_ACHIEVEMENTS = [
+    {
+        'id': 'first_scan',
+        'title': 'First Sprout',
+        'description': 'Complete your first plant scan.',
+        'stat_key': 'scans_count',
+        'target': 1
+    },
+    {
+        'id': 'scan_streak_3',
+        'title': 'Leaf Explorer',
+        'description': 'Complete 3 total plant scans.',
+        'stat_key': 'scans_count',
+        'target': 3
+    },
+    {
+        'id': 'chat_once',
+        'title': 'Curious Botanist',
+        'description': 'Send your first chat message to BotanistAI.',
+        'stat_key': 'chat_count',
+        'target': 1
+    },
+    {
+        'id': 'save_once',
+        'title': 'Seed Keeper',
+        'description': 'Save one plant to your collection.',
+        'stat_key': 'collections_count',
+        'target': 1
+    },
+    {
+        'id': 'collector_5',
+        'title': 'Garden Starter',
+        'description': 'Save 5 plants to your collection.',
+        'stat_key': 'collections_count',
+        'target': 5
+    }
+]
+
+DAILY_CHALLENGE_POOL = [
+    {
+        'id': 'daily_scan_1',
+        'title': 'Daily Scan',
+        'description': 'Scan 1 plant today.',
+        'event_type': 'scan_completed',
+        'target': 1
+    },
+    {
+        'id': 'daily_scan_2',
+        'title': 'Scan Warmup',
+        'description': 'Scan 2 plants today.',
+        'event_type': 'scan_completed',
+        'target': 2
+    },
+    {
+        'id': 'daily_chat_1',
+        'title': 'Ask BotanistAI',
+        'description': 'Send 1 chat message today.',
+        'event_type': 'chat_message_sent',
+        'target': 1
+    },
+    {
+        'id': 'daily_save_1',
+        'title': 'Save a Discovery',
+        'description': 'Add 1 plant to your collection today.',
+        'event_type': 'collection_saved',
+        'target': 1
+    }
+]
+
+EVENT_TO_STAT_KEY = {
+    'scan_completed': 'scans_count',
+    'chat_message_sent': 'chat_count',
+    'collection_saved': 'collections_count'
+}
+
+
+def utc_today_string():
+    return datetime.utcnow().strftime('%Y-%m-%d')
+
+
+def default_progress_state():
+    return {
+        'stats': {
+            'scans_count': 0,
+            'chat_count': 0,
+            'collections_count': 0
+        },
+        'achievement_unlocks': {},
+        'daily': {
+            'date': '',
+            'items': []
+        }
+    }
+
+
+def ensure_progress_schema(progress):
+    safe = progress if isinstance(progress, dict) else {}
+
+    stats = safe.get('stats') if isinstance(safe.get('stats'), dict) else {}
+    safe['stats'] = {
+        'scans_count': int(stats.get('scans_count', 0) or 0),
+        'chat_count': int(stats.get('chat_count', 0) or 0),
+        'collections_count': int(stats.get('collections_count', 0) or 0)
+    }
+
+    unlocks = safe.get('achievement_unlocks')
+    safe['achievement_unlocks'] = unlocks if isinstance(unlocks, dict) else {}
+
+    daily = safe.get('daily') if isinstance(safe.get('daily'), dict) else {}
+    date_value = daily.get('date', '')
+    items_value = daily.get('items', [])
+    safe['daily'] = {
+        'date': str(date_value) if date_value else '',
+        'items': items_value if isinstance(items_value, list) else []
+    }
+
+    return safe
+
+
+def load_progress_state():
+    if not os.path.exists(PROGRESS_FILE):
+        return default_progress_state()
+
+    try:
+        with open(PROGRESS_FILE, 'r', encoding='utf-8') as handle:
+            return ensure_progress_schema(json.load(handle))
+    except Exception as error:
+        print(f"Progress load error: {error}")
+        return default_progress_state()
+
+
+def save_progress_state(progress):
+    try:
+        with open(PROGRESS_FILE, 'w', encoding='utf-8') as handle:
+            json.dump(progress, handle, indent=2)
+    except Exception as error:
+        print(f"Progress save error: {error}")
+
+
+def pick_daily_challenges(day_string):
+    seed_value = int(hashlib.sha256(day_string.encode('utf-8')).hexdigest(), 16)
+    rng = random.Random(seed_value)
+    picks = rng.sample(DAILY_CHALLENGE_POOL, k=min(2, len(DAILY_CHALLENGE_POOL)))
+
+    daily_items = []
+    for challenge in picks:
+        daily_items.append({
+            'id': challenge['id'],
+            'title': challenge['title'],
+            'description': challenge['description'],
+            'event_type': challenge['event_type'],
+            'target': int(challenge['target']),
+            'progress': 0,
+            'completed': False
+        })
+
+    return daily_items
+
+
+def refresh_daily_if_needed(progress):
+    today = utc_today_string()
+    if progress['daily'].get('date') == today and progress['daily'].get('items'):
+        return
+
+    progress['daily'] = {
+        'date': today,
+        'items': pick_daily_challenges(today)
+    }
+
+
+def evaluate_new_achievements(progress):
+    unlocked_ids = progress.get('achievement_unlocks', {})
+    stats = progress.get('stats', {})
+    newly_unlocked = []
+
+    for achievement in BEGINNER_ACHIEVEMENTS:
+        if achievement['id'] in unlocked_ids:
+            continue
+
+        stat_value = int(stats.get(achievement['stat_key'], 0) or 0)
+        if stat_value >= int(achievement['target']):
+            unlocked_at = datetime.utcnow().isoformat(timespec='seconds') + 'Z'
+            unlocked_ids[achievement['id']] = unlocked_at
+            newly_unlocked.append({
+                'id': achievement['id'],
+                'title': achievement['title'],
+                'unlocked_at': unlocked_at
+            })
+
+    progress['achievement_unlocks'] = unlocked_ids
+    return newly_unlocked
+
+
+def apply_progress_event(progress, event_type):
+    refresh_daily_if_needed(progress)
+
+    stat_key = EVENT_TO_STAT_KEY.get(event_type)
+    if stat_key:
+        progress['stats'][stat_key] = int(progress['stats'].get(stat_key, 0) or 0) + 1
+
+    for daily_item in progress['daily'].get('items', []):
+        if daily_item.get('event_type') != event_type or daily_item.get('completed'):
+            continue
+
+        next_value = int(daily_item.get('progress', 0) or 0) + 1
+        target_value = int(daily_item.get('target', 1) or 1)
+        daily_item['progress'] = min(next_value, target_value)
+        daily_item['completed'] = daily_item['progress'] >= target_value
+
+    return evaluate_new_achievements(progress)
+
+
+def build_progress_payload(progress, newly_unlocked=None):
+    refresh_daily_if_needed(progress)
+    unlock_map = progress.get('achievement_unlocks', {})
+    stats = progress.get('stats', {})
+
+    achievements = []
+    for achievement in BEGINNER_ACHIEVEMENTS:
+        stat_value = int(stats.get(achievement['stat_key'], 0) or 0)
+        target = int(achievement['target'])
+        progress_value = min(stat_value, target)
+        unlocked_at = unlock_map.get(achievement['id'])
+        achievements.append({
+            'id': achievement['id'],
+            'title': achievement['title'],
+            'description': achievement['description'],
+            'target': target,
+            'progress': progress_value,
+            'unlocked': bool(unlocked_at),
+            'unlocked_at': unlocked_at
+        })
+
+    daily_items = []
+    for item in progress['daily'].get('items', []):
+        daily_items.append({
+            'id': item.get('id'),
+            'title': item.get('title'),
+            'description': item.get('description'),
+            'target': int(item.get('target', 1) or 1),
+            'progress': int(item.get('progress', 0) or 0),
+            'completed': bool(item.get('completed'))
+        })
+
+    unlocked_count = len([item for item in achievements if item['unlocked']])
+    completed_daily = len([item for item in daily_items if item['completed']])
+
+    return {
+        'today': progress['daily'].get('date', utc_today_string()),
+        'stats': stats,
+        'achievements': achievements,
+        'daily_challenges': daily_items,
+        'summary': {
+            'unlocked_achievements': unlocked_count,
+            'total_achievements': len(achievements),
+            'completed_daily_challenges': completed_daily,
+            'total_daily_challenges': len(daily_items)
+        },
+        'newly_unlocked': newly_unlocked or []
+    }
 
 
 def parse_json_object(text):
@@ -357,6 +623,37 @@ def chat():
 
         return jsonify({'reply': reply}), 200
 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/player-progress', methods=['GET'])
+def get_player_progress():
+    """Return beginner achievements and daily challenge state."""
+    try:
+        progress = load_progress_state()
+        refresh_daily_if_needed(progress)
+        save_progress_state(progress)
+        return jsonify(build_progress_payload(progress)), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/player-progress/event', methods=['POST'])
+def post_player_progress_event():
+    """Track a user event and return updated progress."""
+    try:
+        data = request.json or {}
+        event_type = str(data.get('event_type', '')).strip()
+
+        if event_type not in EVENT_TO_STAT_KEY:
+            return jsonify({'error': 'Unsupported event_type'}), 400
+
+        progress = load_progress_state()
+        newly_unlocked = apply_progress_event(progress, event_type)
+        save_progress_state(progress)
+
+        return jsonify(build_progress_payload(progress, newly_unlocked=newly_unlocked)), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

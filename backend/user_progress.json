@@ -1,0 +1,33 @@
+{
+  "stats": {
+    "scans_count": 0,
+    "chat_count": 1,
+    "collections_count": 0
+  },
+  "achievement_unlocks": {
+    "chat_once": "2026-04-22T13:27:30Z"
+  },
+  "daily": {
+    "date": "2026-04-22",
+    "items": [
+      {
+        "id": "daily_chat_1",
+        "title": "Ask BotanistAI",
+        "description": "Send 1 chat message today.",
+        "event_type": "chat_message_sent",
+        "target": 1,
+        "progress": 1,
+        "completed": true
+      },
+      {
+        "id": "daily_save_1",
+        "title": "Save a Discovery",
+        "description": "Add 1 plant to your collection today.",
+        "event_type": "collection_saved",
+        "target": 1,
+        "progress": 0,
+        "completed": false
+      }
+    ]
+  }
+}

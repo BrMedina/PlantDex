@@ -82,6 +82,134 @@ body.app-body {
   margin-bottom: 0;
 }
 
+.gamify-panel {
+  margin-bottom: 18px;
+  border: 1px solid #dcfce7;
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(180deg, #f8fff9 0%, #ffffff 100%);
+}
+
+.gamify-panel-head,
+.gamify-achievements-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gamify-panel-head h2,
+.gamify-achievements-head h3 {
+  margin-bottom: 0;
+}
+
+.gamify-panel-head h2 {
+  font-size: 18px;
+}
+
+.gamify-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gamify-date,
+.achievement-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.gamify-achievements-head {
+  margin-top: 12px;
+}
+
+.gamify-panel.is-minimized .daily-challenges-list .daily-challenge-card:nth-child(n + 2) {
+  display: none;
+}
+
+.gamify-panel.is-minimized .gamify-achievements-head,
+.gamify-panel.is-minimized .achievements-list {
+  display: none;
+}
+
+.daily-challenges-list,
+.achievements-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.daily-challenge-card,
+.achievement-card {
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.daily-challenge-card.is-complete,
+.achievement-card.is-unlocked {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.game-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.game-card-head h4 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #14532d;
+}
+
+.daily-challenge-card p,
+.achievement-card p {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.game-chip {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ecfccb;
+  color: #3f6212;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.game-progress-track {
+  margin-top: 8px;
+  height: 7px;
+  border-radius: 999px;
+  background: #dcfce7;
+  overflow: hidden;
+}
+
+.game-progress-fill {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #16a34a 0%, #84cc16 100%);
+  transition: width 0.2s ease;
+}
+
+.game-progress-label {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #4b5563;
+}
+
+.gamify-empty {
+  font-size: 12px;
+  color: #6b7280;
+}
+
 .camera-panel {
   position: fixed;
   left: 50%;

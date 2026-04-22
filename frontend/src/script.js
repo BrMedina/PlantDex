@@ -33,6 +33,12 @@ const resultPlantPhoto = document.getElementById('resultPlantPhoto');
 const latestScanPanelBody = document.getElementById('latestScanPanelBody');
 const webcam = document.getElementById('webcam');
 const cameraFileInput = document.getElementById('cameraFileInput');
+const dailyChallengeDate = document.getElementById('dailyChallengeDate');
+const dailyChallengesList = document.getElementById('dailyChallengesList');
+const achievementsList = document.getElementById('achievementsList');
+const achievementSummary = document.getElementById('achievementSummary');
+const homeGamifyPanel = document.getElementById('homeGamifyPanel');
+const toggleGamifyPanelBtn = document.getElementById('toggleGamifyPanelBtn');
 
 const STORAGE_KEYS = {
   latestScan: 'plantdex.latestScan',
@@ -47,6 +53,8 @@ let latestScanData = null;
 let scanHistory = [];
 let collectionPlants = [];
 let isLatestScanMinimized = false;
+let isGamifyPanelMinimized = false;
+let gamificationData = null;
 
 function openFileCameraFallback() {
   isFileCameraFallback = true;
@@ -62,6 +70,19 @@ function setLatestScanMinimized(nextState) {
   homePanel.classList.toggle('is-minimized', isLatestScanMinimized);
   toggleLatestScanBtn.textContent = isLatestScanMinimized ? 'Expand' : 'Minimize';
   toggleLatestScanBtn.setAttribute('aria-expanded', String(!isLatestScanMinimized));
+}
+
+function setGamifyPanelMinimized(nextState) {
+  isGamifyPanelMinimized = !!nextState;
+
+  if (homeGamifyPanel) {
+    homeGamifyPanel.classList.toggle('is-minimized', isGamifyPanelMinimized);
+  }
+
+  if (toggleGamifyPanelBtn) {
+    toggleGamifyPanelBtn.textContent = isGamifyPanelMinimized ? 'Expand' : 'Minimize';
+    toggleGamifyPanelBtn.setAttribute('aria-expanded', String(!isGamifyPanelMinimized));
+  }
 }
 
 function loadStoredJson(key, fallback) {
@@ -85,6 +106,123 @@ function formatShortDate(isoDate) {
     return new Date(isoDate).toLocaleString();
   } catch {
     return 'Unknown time';
+  }
+}
+
+function formatDailyDateLabel(isoDate) {
+  try {
+    return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return 'Today';
+  }
+}
+
+function createProgressBarMarkup(progress, target) {
+  const safeTarget = Math.max(1, Number(target) || 1);
+  const safeProgress = Math.max(0, Math.min(safeTarget, Number(progress) || 0));
+  const ratio = Math.round((safeProgress / safeTarget) * 100);
+
+  return `
+    <div class="game-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="${safeTarget}" aria-valuenow="${safeProgress}">
+      <div class="game-progress-fill" style="width: ${ratio}%;"></div>
+    </div>
+    <p class="game-progress-label">${safeProgress}/${safeTarget}</p>
+  `;
+}
+
+function renderGamification(data) {
+  gamificationData = data;
+
+  const achievementData = Array.isArray(data && data.achievements) ? data.achievements : [];
+  const challengeData = Array.isArray(data && data.daily_challenges) ? data.daily_challenges : [];
+  const summary = data && data.summary ? data.summary : {};
+
+  if (dailyChallengeDate) {
+    dailyChallengeDate.textContent = data && data.today ? formatDailyDateLabel(data.today) : 'Today';
+  }
+
+  if (achievementSummary) {
+    achievementSummary.textContent = `${summary.unlocked_achievements || 0}/${summary.total_achievements || achievementData.length} unlocked`;
+  }
+
+  dailyChallengesList.innerHTML = '';
+  if (!challengeData.length) {
+    dailyChallengesList.innerHTML = '<p class="gamify-empty">No daily challenges yet.</p>';
+  } else {
+    challengeData.forEach((challenge) => {
+      const card = document.createElement('article');
+      card.className = `daily-challenge-card ${challenge.completed ? 'is-complete' : ''}`;
+      card.innerHTML = `
+        <div class="game-card-head">
+          <h4>${challenge.title || 'Challenge'}</h4>
+          <span class="game-chip">${challenge.completed ? 'Done' : 'In Progress'}</span>
+        </div>
+        <p>${challenge.description || ''}</p>
+        ${createProgressBarMarkup(challenge.progress, challenge.target)}
+      `;
+      dailyChallengesList.appendChild(card);
+    });
+  }
+
+  achievementsList.innerHTML = '';
+  if (!achievementData.length) {
+    achievementsList.innerHTML = '<p class="gamify-empty">No achievements available.</p>';
+  } else {
+    achievementData.forEach((achievement) => {
+      const card = document.createElement('article');
+      card.className = `achievement-card ${achievement.unlocked ? 'is-unlocked' : ''}`;
+      card.innerHTML = `
+        <div class="game-card-head">
+          <h4>${achievement.title || 'Achievement'}</h4>
+          <span class="game-chip">${achievement.unlocked ? 'Unlocked' : 'Locked'}</span>
+        </div>
+        <p>${achievement.description || ''}</p>
+        ${createProgressBarMarkup(achievement.progress, achievement.target)}
+      `;
+      achievementsList.appendChild(card);
+    });
+  }
+}
+
+async function fetchPlayerProgress() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/player-progress`);
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json();
+    renderGamification(payload);
+  } catch (error) {
+    console.error('Progress fetch error:', error);
+  }
+}
+
+async function trackProgressEvent(eventType) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/player-progress/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ event_type: eventType })
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json();
+    renderGamification(payload);
+
+    const newlyUnlocked = Array.isArray(payload.newly_unlocked) ? payload.newly_unlocked : [];
+    if (newlyUnlocked.length) {
+      const firstTitle = newlyUnlocked[0] && newlyUnlocked[0].title ? newlyUnlocked[0].title : 'Achievement';
+      alert(`Achievement unlocked: ${firstTitle}`);
+    }
+  } catch (error) {
+    console.error('Progress event error:', error);
   }
 }
 
@@ -274,6 +412,10 @@ function setActiveTab(tabName) {
   panels.forEach((panel) => {
     panel.classList.toggle('is-active', panel.dataset.panel === tabName);
   });
+
+  if (homeGamifyPanel) {
+    homeGamifyPanel.classList.toggle('is-hidden', tabName !== 'home');
+  }
 }
 
 function stopDeviceCameraStream() {
@@ -519,6 +661,7 @@ async function sendPlantChatMessage() {
 
     const payload = await response.json();
     await appendChatMessage('assistant', payload.reply || 'No reply received.', { typewriter: true });
+    await trackProgressEvent('chat_message_sent');
   } catch (error) {
     await appendChatMessage('assistant', `I could not respond right now: ${error.message}`, { typewriter: true });
   } finally {
@@ -560,7 +703,7 @@ function clearAllHistory() {
   setActiveTab('home');
 }
 
-function addCurrentPlantToCollection() {
+async function addCurrentPlantToCollection() {
   if (!latestScanData) {
     alert('Scan a plant first before adding to collections.');
     return;
@@ -588,6 +731,7 @@ function addCurrentPlantToCollection() {
 
   persistState();
   renderCollections();
+  await trackProgressEvent('collection_saved');
   alert('Plant added to Collections.');
 }
 
@@ -628,6 +772,7 @@ async function scanPlant(imageBase64) {
     const plantData = await response.json();
     plantData.photo_data_url = optimizedPhoto;
     displayPlantResults(plantData);
+    await trackProgressEvent('scan_completed');
     closeCamera();
     setActiveTab('home');
   } catch (error) {
@@ -692,6 +837,9 @@ cameraFileInput.addEventListener('change', async (event) => {
 clearResultsBtn.addEventListener('click', clearResults);
 clearAllHistoryBtn.addEventListener('click', clearAllHistory);
 toggleLatestScanBtn.addEventListener('click', () => setLatestScanMinimized(!isLatestScanMinimized));
+if (toggleGamifyPanelBtn) {
+  toggleGamifyPanelBtn.addEventListener('click', () => setGamifyPanelMinimized(!isGamifyPanelMinimized));
+}
 addToCollectionBtn.addEventListener('click', addCurrentPlantToCollection);
 openChatBtn.addEventListener('click', openPlantChat);
 chatBackBtn.addEventListener('click', closePlantChat);
@@ -710,3 +858,5 @@ window.addEventListener('beforeunload', () => {
 });
 
 initializeStoredState();
+fetchPlayerProgress();
+setGamifyPanelMinimized(false);
