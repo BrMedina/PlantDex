@@ -5,9 +5,8 @@ A mobile-first web app that uses Gemini Vision for plant identification and Groq
 ## Features
 
 - 📸 **Real-time Plant Scanning**: Capture photos via mobile camera
-- 🤖 **Gemini Vision Integration**: Accurate plant species identification  
+- 🤖 **PlantNet API Integration**: Accurate plant species identification  
 - 💬 **Groq Chatbot**: Get detailed botanical information
-- 🌍 **Location-aware Blooming**: See bloom seasons for your hemisphere
 - 📋 **Care Tips & Toxicity Info**: Get complete plant care details
 - 📱 **Mobile-optimized UI**: Beautiful, responsive design
 
