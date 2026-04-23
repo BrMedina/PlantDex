@@ -1,11 +1,11 @@
 # PlantDex - AI-Powered Plant Identification App
 
-A mobile-first web app that uses Gemini Vision for plant identification and Groq for botanical chatbot conversations.
+A mobile-first web app that uses Pl@ntNet for plant identification and Groq for botanical chatbot conversations.
 
 ## Features
 
 - 📸 **Real-time Plant Scanning**: Capture photos via mobile camera
-- 🤖 **PlantNet API Integration**: Accurate plant species identification  
+- 🤖 **Pl@ntNet API Integration**: Accurate plant species identification  
 - 💬 **Groq Chatbot**: Get detailed botanical information
 - 📋 **Care Tips & Toxicity Info**: Get complete plant care details
 - 📱 **Mobile-optimized UI**: Beautiful, responsive design
@@ -29,7 +29,7 @@ A mobile-first web app that uses Gemini Vision for plant identification and Groq
 
 3. **Get API Keys**:
    - [Groq API](https://console.groq.com)
-   - [Google Gemini API](https://ai.google.dev)
+   - [Pl@ntNet API](https://my.plantnet.org/)
 
 4. **Start server**:
    ```bash
@@ -123,7 +123,7 @@ Flask Backend API
 2. Taps camera FAB button
 3. Captures plant photo with shutter button
 4. Frontend sends base64 image to `/api/scan-plant`
-5. Gemini Vision identifies plant and extracts details
+5. Pl@ntNet identifies plant and extracts details
 6. Results displayed with confidence badge, care tips, blooming info
 7. User can discuss plant further using chat feature
 
@@ -133,8 +133,7 @@ Flask Backend API
 PlantDex/
 ├── backend/
 │   ├── app.py (Flask server with endpoints)
-│   ├── requirements.txt (Python dependencies)
-│   └── .env (API keys)
+│   └── requirements.txt (Python dependencies)
 └── frontend/
     ├── src/
     │   ├── index.html (app structure)
@@ -159,7 +158,7 @@ Requires HTTPS or localhost for camera access.
 ## API Limits
 
 - **Groq**: Free tier allows ~25 requests/minute
-- **Gemini Vision**: Check your quota at [Google AI Studio](https://ai.google.dev)
+- **Pl@ntNet**: Check your quota at [Pl@ntNet](https://my.plantnet.org/)
 
 ## Troubleshooting
 
