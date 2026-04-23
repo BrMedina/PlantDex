@@ -492,7 +492,7 @@ async function capturePhotoFromVideo() {
 
   canvas.width = width;
   canvas.height = height;
-  
+
   try {
     context.drawImage(webcam, 0, 0, width, height);
   } catch (error) {
@@ -747,7 +747,7 @@ async function scanPlant(imageBase64) {
   try {
     const base64Data = imageBase64.split(',')[1] || imageBase64;
     const optimizedPhoto = await compressImageDataUrl(imageBase64);
-    
+
     // Debug: Log image size and first 50 chars
     console.log('Captured image size:', base64Data.length, 'bytes');
     console.log('Image preview (first 50 chars):', base64Data.substring(0, 50));

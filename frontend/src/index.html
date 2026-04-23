@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlantDex</title>
     <link rel="stylesheet" href="output.css">
 </head>
+
 <body class="app-body">
     <div class="app-shell">
         <header class="top-header">
-            <h1 class="title" >PlantDex</h1>
+            <h1 class="title">PlantDex</h1>
             <button class="icon-btn" type="button" aria-label="Notifications">
                 <ion-icon name="notifications-outline"></ion-icon>
             </button>
@@ -21,7 +23,8 @@
                     <h2>Daily Challenges</h2>
                     <div class="gamify-head-actions">
                         <span id="dailyChallengeDate" class="gamify-date">Today</span>
-                        <button id="toggleGamifyPanelBtn" class="latest-scan-toggle" type="button" aria-expanded="true">Minimize</button>
+                        <button id="toggleGamifyPanelBtn" class="latest-scan-toggle" type="button"
+                            aria-expanded="true">Minimize</button>
                     </div>
                 </div>
                 <div id="dailyChallengesList" class="daily-challenges-list"></div>
@@ -37,98 +40,107 @@
 
                 <div class="latest-scan-panel-header">
                     <h2>Latest Scan</h2>
-                    <button id="toggleLatestScanBtn" class="latest-scan-toggle" type="button" aria-expanded="true">Minimize</button>
+                    <button id="toggleLatestScanBtn" class="latest-scan-toggle" type="button"
+                        aria-expanded="true">Minimize</button>
                 </div>
                 <div id="latestScanPanelBody">
-                <div id="plantResults" class="plant-results hidden">
-                    <div class="plant-card">
-                        <div id="plantDetailsView">
-                        <div id="resultPhotoWrap" class="result-photo-wrap is-hidden">
-                            <img id="resultPlantPhoto" class="result-plant-photo" src="" alt="Captured plant photo">
-                        </div>
-                        <div class="plant-header">
-                            <div class="plant-name-group">
-                                <h3 id="resultPlantName" class="plant-name">---</h3>
-                                <p id="resultScientificName" class="scientific-name">---</p>
-                                <p id="resultIdentifiedBy" class="identified-by">Identified by: ---</p>
+                    <div id="plantResults" class="plant-results hidden">
+                        <div class="plant-card">
+                            <div id="plantDetailsView">
+                                <div id="resultPhotoWrap" class="result-photo-wrap is-hidden">
+                                    <img id="resultPlantPhoto" class="result-plant-photo" src=""
+                                        alt="Captured plant photo">
+                                </div>
+                                <div class="plant-header">
+                                    <div class="plant-name-group">
+                                        <h3 id="resultPlantName" class="plant-name">---</h3>
+                                        <p id="resultScientificName" class="scientific-name">---</p>
+                                        <p id="resultIdentifiedBy" class="identified-by">Identified by: ---</p>
+                                    </div>
+                                </div>
+
+                                <div class="confidence-meter">
+                                    <div class="confidence-meter-head">
+                                        <span class="confidence-title">AI Confidence</span>
+                                        <span id="resultConfidence" class="confidence-value">0%</span>
+                                    </div>
+                                    <div class="confidence-track" role="progressbar" aria-label="AI confidence"
+                                        aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                                        <div id="resultConfidenceBar" class="confidence-fill" style="width: 0%;"></div>
+                                    </div>
+                                </div>
+
+                                <div class="plant-type-tag">
+                                    <span id="resultPlantType">---</span>
+                                </div>
+
+                                <div class="result-section">
+                                    <h4>Description</h4>
+                                    <p id="resultDescription">---</p>
+                                </div>
+
+                                <div class="result-grid">
+                                    <div class="result-item-bloom">
+                                        <span class="result-label-bloom">Bloom Season</span>
+                                        <p id="resultBloomSeason">---</p>
+                                    </div>
+                                    <div class="result-item-toxic">
+                                        <span class="result-label-toxic">Toxicity</span>
+                                        <p id="resultToxicity">---</p>
+                                    </div>
+                                </div>
+
+                                <div class="result-section">
+                                    <h4>Care Tips</h4>
+                                    <ul id="resultCareTips" class="care-tips-list">
+                                        <li>---</li>
+                                    </ul>
+                                </div>
+
+                                <div class="result-section">
+                                    <h4>Native Regions</h4>
+                                    <p id="resultNativeRegions">---</p>
+                                </div>
+
+                                <p class="ai-warning">
+                                    Warning: Plant details are AI-generated. Please double-check bloom season, toxicity,
+                                    and care information before acting on it.
+                                </p>
+
+                                <button id="addToCollectionBtn" class="btn-secondary" type="button">Add to
+                                    Collection</button>
+                                <button id="openChatBtn" class="btn-secondary" type="button">Chat about this
+                                    plant</button>
+                                <button id="clearResultsBtn" class="btn-primary" type="button">Scan Another
+                                    Plant</button>
                             </div>
-                        </div>
 
-                        <div class="confidence-meter">
-                            <div class="confidence-meter-head">
-                                <span class="confidence-title">AI Confidence</span>
-                                <span id="resultConfidence" class="confidence-value">0%</span>
-                            </div>
-                            <div class="confidence-track" role="progressbar" aria-label="AI confidence" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-                                <div id="resultConfidenceBar" class="confidence-fill" style="width: 0%;"></div>
-                            </div>
-                        </div>
-
-                        <div class="plant-type-tag">
-                            <span id="resultPlantType">---</span>
-                        </div>
-
-                        <div class="result-section">
-                            <h4>Description</h4>
-                            <p id="resultDescription">---</p>
-                        </div>
-
-                        <div class="result-grid">
-                            <div class="result-item-bloom">
-                                <span class="result-label-bloom">Bloom Season</span>
-                                <p id="resultBloomSeason">---</p>
-                            </div>
-                            <div class="result-item-toxic">
-                                <span class="result-label-toxic">Toxicity</span>
-                                <p id="resultToxicity">---</p>
-                            </div>
-                        </div>
-
-                        <div class="result-section">
-                            <h4>Care Tips</h4>
-                            <ul id="resultCareTips" class="care-tips-list">
-                                <li>---</li>
-                            </ul>
-                        </div>
-
-                        <div class="result-section">
-                            <h4>Native Regions</h4>
-                            <p id="resultNativeRegions">---</p>
-                        </div>
-
-                        <p class="ai-warning">
-                            Warning: Plant details are AI-generated. Please double-check bloom season, toxicity, and care information before acting on it.
-                        </p>
-
-                        <button id="addToCollectionBtn" class="btn-secondary" type="button">Add to Collection</button>
-                        <button id="openChatBtn" class="btn-secondary" type="button">Chat about this plant</button>
-                        <button id="clearResultsBtn" class="btn-primary" type="button">Scan Another Plant</button>
-                        </div>
-
-                        <div id="plantChatPanel" class="chat-panel is-hidden">
-                            <div class="chat-panel-header">
-                                <button id="chatBackBtn" class="chat-back-btn" type="button">Back to Plant Details</button>
-                                <h4>Plant Chat</h4>
-                            </div>
-                            <div id="chatMessages" class="chat-messages"></div>
-                            <div class="chat-composer">
-                                <input id="chatInput" class="chat-input" type="text" placeholder="Ask about care, bloom, toxicity..." />
-                                <button id="sendChatBtn" class="chat-send-btn" type="button">Send</button>
+                            <div id="plantChatPanel" class="chat-panel is-hidden">
+                                <div class="chat-panel-header">
+                                    <button id="chatBackBtn" class="chat-back-btn" type="button">Back to Plant
+                                        Details</button>
+                                    <h4>Plant Chat</h4>
+                                </div>
+                                <div id="chatMessages" class="chat-messages"></div>
+                                <div class="chat-composer">
+                                    <input id="chatInput" class="chat-input" type="text"
+                                        placeholder="Ask about care, bloom, toxicity..." />
+                                    <button id="sendChatBtn" class="chat-send-btn" type="button">Send</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div id="emptyState" class="empty-state">
-                    <ion-icon name="leaf-outline"></ion-icon>
-                    <p>Scan a plant with the camera to get started!</p>
-                </div>
+                    <div id="emptyState" class="empty-state">
+                        <ion-icon name="leaf-outline"></ion-icon>
+                        <p>Scan a plant with the camera to get started!</p>
+                    </div>
 
-                <div class="history-section">
-                    <h3>Scan History</h3>
-                    <ul id="scanHistoryList" class="history-list"></ul>
-                    <button id="clearAllHistoryBtn" class="btn-danger" type="button">Clear All History</button>
-                </div>
+                    <div class="history-section">
+                        <h3>Scan History</h3>
+                        <ul id="scanHistoryList" class="history-list"></ul>
+                        <button id="clearAllHistoryBtn" class="btn-danger" type="button">Clear All History</button>
+                    </div>
                 </div>
             </section>
 
@@ -141,12 +153,42 @@
                 <h2>Collections</h2>
                 <p>View your saved plant library.</p>
                 <div id="collectionsList" class="collections-list"></div>
-                <p id="collectionsEmpty" class="collections-empty">No saved plants yet. Scan a plant and tap Add to Collection.</p>
+                <p id="collectionsEmpty" class="collections-empty">No saved plants yet. Scan a plant and tap Add to
+                    Collection.</p>
             </section>
 
-            <section class="tab-panel" data-panel="profile">
-                <h2>Profile</h2>
-                <p>Manage your account and app settings.</p>
+            <section class="tab-panel profile-tab-panel" data-panel="profile">
+                <div class="profile-shell">
+                    <div class="profile-hero-card">
+                        <div class="profile-avatar-lg">JD</div>
+                        <h2 class="profile-name-lg">John Doe</h2>
+
+                        <div class="profile-stats-grid" aria-label="Profile stats">
+                            <div class="profile-stat-item">
+                                <span class="profile-stat-num">0</span>
+                                <span class="profile-stat-lbl">Scanned</span>
+                            </div>
+                            <div class="profile-stat-item">
+                                <span class="profile-stat-num">0</span>
+                                <span class="profile-stat-lbl">Rare</span>
+                            </div>
+                            <div class="profile-stat-item">
+                                <span class="profile-stat-num">0</span>
+                                <span class="profile-stat-lbl">Regions</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-tabs-row" role="tablist" aria-label="Profile tabs">
+                        <button class="profile-tab-btn is-active" type="button" role="tab" aria-selected="true">My
+                            dex</button>
+                        <button class="profile-tab-btn" type="button" role="tab"
+                            aria-selected="false">Achievements</button>
+                        <button class="profile-tab-btn" type="button" role="tab" aria-selected="false">Activity</button>
+                    </div>
+
+
+                </div>
             </section>
         </main>
 
@@ -215,6 +257,7 @@
 
     <script src="script.js"></script>
 </body>
+
 </html>
 
 <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
